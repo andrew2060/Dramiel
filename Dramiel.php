@@ -128,7 +128,7 @@ $ws->on(
         //
         // We will echo to the console that the WebSocket is ready.
         $logger->addInfo('Discord WebSocket is ready!' . PHP_EOL);
-        $game = new Game(array('name' => $config["bot"]["game"], 'url' => null, 'type' => null), true);
+        $game = $ws->factory->create(Game::class, array('name' => $config["bot"]["game"], 'url' => null, 'type' => null), true);
         $ws->updatePresence($game, false);
         // $ws->setNickname($config["bot"]["name"]); //not in yet
 
