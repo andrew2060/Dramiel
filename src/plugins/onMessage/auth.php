@@ -23,6 +23,8 @@
  * SOFTWARE.
  */
 
+ use Discord\Helpers\Guzzle;
+ 
 /**
  * Class auth
  * @property  message
@@ -132,6 +134,12 @@ class auth
                 } elseif ($this->nameEnforce == 'true') {
                     foreach ($xml->result->rowset->row as $character) {
                         if ($character->attributes()->name != $userName) {
+							Guzzle::patch(
+								"guilds/{$this->config["bot"]["primary"]}/members/{$userID}",
+								[
+									'nick' => $character->attributes()->name,
+								]							
+							);
 							$this->discord->guilds->first()->members->get("id", $userID)->setNickname($character->attributes()->name);
                             $this->message->reply("**Failure:** Your discord name must match your character name.");
                             $this->logger->addInfo("User was denied due to not having the correct name " . $character->attributes()->name);
