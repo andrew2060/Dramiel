@@ -133,18 +133,8 @@ class auth
                     return null;
                 } elseif ($this->nameEnforce == 'true') {
                     foreach ($xml->result->rowset->row as $character) {
-                        if ($character->attributes()->name != $userName) {
-							Guzzle::patch(
-								"guilds/{$this->message->getFullChannelAttribute()[@guild_id]}/members/{$userID}",
-								[
-									'nick' => $character->attributes()->name,
-								]							
-							);
-                            $this->message->reply("**Failure:** Your discord name must match your character name.");
-                            $this->logger->addInfo("User was denied due to not having the correct name " . $character->attributes()->name);
-                            return null;
-
-                        }
+						$this->discord->guilds->first()->members->get("id", $userID)->setNickname($character->attributes()->name);
+						break;
                     }
                 }
 				$grantedRoles = array();
@@ -159,7 +149,7 @@ class auth
                             if ($roleName == $this->allianceRoles[$allianceid]) {
                                 $member->addRole($role);
                                 $member->save();
-								$grantedRoles = $roleName;
+								$grantedRoles = array_push($grantedRoles, $roleName);
 								if (!$flag) {
 									$flag = 'true';
 								}
@@ -175,7 +165,7 @@ class auth
                         foreach ($roles as $role) {
                             $roleName = $role->name;
                             if ($roleName == $this->corpRoles[$corpid]) {
-								$grantedRoles = $roleName;
+								$grantedRoles = array_push($grantedRoles, $roleName);
                                 $member->addRole($role);
                                 $member->save();
 								if (!$flag) {
