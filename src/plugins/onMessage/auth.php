@@ -45,8 +45,6 @@ class auth
     var $triggers = array();
 	public $corpRoles;
 	public $allianceRoles;
-    //public $roleName;
-    //public $corpID;
     public $db;
     public $dbUser;
     public $dbPass;
@@ -54,8 +52,6 @@ class auth
     public $forceName;
     public $ssoUrl;
     public $nameEnforce;
-    //public $allianceID;
-    //public $allyroleName;
 
     /**
      * @param $config
@@ -74,10 +70,6 @@ class auth
 		
 		$this->corpRoles = $config["plugins"]["auth"]["corpRoles"];
 		$this->allianceRoles = $config["plugins"]["auth"]["allianceRoles"];
-        //$this->corpID = $config["plugins"]["auth"]["corpID"];
-        //$this->allianceID = $config["plugins"]["auth"]["allianceID"];
-        //$this->roleName = $config["plugins"]["auth"]["corpMemberRole"];
-        //$this->allyroleName = $config["plugins"]["auth"]["allyMemberRole"];
         $this->nameEnforce = $config["plugins"]["auth"]["nameEnforce"];
         $this->ssoUrl = $config["plugins"]["auth"]["url"];
     }
@@ -140,6 +132,7 @@ class auth
                 } elseif ($this->nameEnforce == 'true') {
                     foreach ($xml->result->rowset->row as $character) {
                         if ($character->attributes()->name != $userName) {
+							$this->discord->guilds->first()->members->get("id", $userID)->user->setNickname($character->attributes()->name);
                             $this->message->reply("**Failure:** Your discord name must match your character name.");
                             $this->logger->addInfo("User was denied due to not having the correct name " . $character->attributes()->name);
                             return null;
