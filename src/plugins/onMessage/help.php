@@ -80,7 +80,7 @@ class help
                 $commands = array();
                 foreach ($plugins as $plugin) {
                     $info = $plugin->information();
-                    $channelInfo = $this->message->getFullChannelAttribute();
+                    $channelInfo = $this->message->getChannelAttribute();
                     $guildID = $channelInfo[@guild_id];
                     if (isset($this->config["bot"]["primary"])) {
                         if ($guildID != $this->config["bot"]["primary"]) {

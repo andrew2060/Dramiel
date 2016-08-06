@@ -97,7 +97,7 @@ class auth
         if (isset($data["trigger"])) {
             if (isset($this->config["bot"]["primary"])) {
                 $userID = $msgData["message"]["fromID"];
-                $channelInfo = $this->message->getFullChannelAttribute();
+                $channelInfo = $this->message->getChannelAttribute();
                 $guildID = $channelInfo[@guild_id];
                 if ($guildID != $this->config["bot"]["primary"]) {
                     $this->message->reply("**Failure:** The auth code your attempting to use is for another discord server");
@@ -119,7 +119,6 @@ class auth
                 $allianceid = (int) $rows['allianceID'];
                 $url = "https://api.eveonline.com/eve/CharacterName.xml.aspx?ids=$charid";
                 $xml = makeApiRequest($url);
-				$flag = 'false';
 
 
                 // We have an error, show it 
@@ -131,80 +130,80 @@ class auth
                 if (!isset($xml->result->rowset->row)) {
                     $this->message->reply("**Failure:** Eve API error, please try again in a little while.");
                     return null;
-                } elseif ($this->nameEnforce == 'true') {
-                    foreach ($xml->result->rowset->row as $character) {
-						$this->discord->guilds->first()->members->get("id", $userID)->setNickname($character->attributes()->name);
-						break;
-                    }
-                }
-				$grantedRoles = array();
+                } 
+				
                 foreach ($xml->result->rowset->row as $character) {
                     $eveName = $character->attributes()->name;
-                    
-                    if (array_key_exists($allianceid, $this->allianceRoles)) {
-                        $roles = $this->message->getFullChannelAttribute()->getGuildAttribute()->getRolesAttribute();
-                        $member = $this->message->getFullChannelAttribute()->getGuildAttribute()->getMembersAttribute()->get("id", $userID);
-                        foreach ($roles as $role) {
-                            $roleName = $role->name;
-                            if ($roleName == $this->allianceRoles[$allianceid]) {
-                                $member->addRole($role);
-                                $member->save();
-								array_push($grantedRoles, $roleName);
-								if (!$flag) {
-									$flag = 'true';
-								}
-                                insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'ally');
-                                disableReg($this->db, $this->dbUser, $this->dbPass, $this->dbName, $code);
-                                break;
-                            }
-                        }
-                    }
-					if (array_key_exists($corpid, $this->corpRoles)) {
-                        $roles = $this->message->getFullChannelAttribute()->getGuildAttribute()->getRolesAttribute();
-                        $member = $this->message->getFullChannelAttribute()->getGuildAttribute()->getMembersAttribute()->get("id", $userID);
-                        foreach ($roles as $role) {
-                            $roleName = $role->name;
-                            if ($roleName == $this->corpRoles[$corpid]) {
-								array_push($grantedRoles, $roleName);
-                                $member->addRole($role);
-                                $member->save();
-								if (!$flag) {
-									$flag = 'true';
-									// Only insert new database entry for corp if no authorized alliance
-									insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'corp');
+                    $roles = $this->message->getChannelAttribute()->getGuildAttribute()->roles;
+					$members = $this->message->getChannelAttribute()->getGuildAttribute()->members;
+					$members->fetch($userID)->then(function ($member) use ($roles, $xml, $charid, $corpid, $allianceid, $message, $data, $userID, $userName, $eveName, $code, $members) {
+						$grantedRoles = array();
+						$flag = 'false';
+						if (array_key_exists($allianceid, $this->allianceRoles)) {
+							foreach ($roles as $role) {
+								$roleName = $role->name;
+								if ($roleName == $this->allianceRoles[$allianceid]) {
+									$member->addrole($role);
+									array_push($grantedRoles, $role);
+									if (!$flag) {
+										$flag = 'true';
+									}
+									insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'ally');
 									disableReg($this->db, $this->dbUser, $this->dbPass, $this->dbName, $code);
-								}								
-								break;
-                            }						
-                        }
-                    }
-					if ($flag) {
-						$reply = "**Success:** You have successfully been added to the following groups: ";
-						$flag2 = 'false';
-						foreach ($grantedRoles as $role) {
-							if ($flag2) {
-								$reply .= ", " . $role;
-							} else {
-								$reply .= $role;
-								$flag2 = 'true';
+									break;
+								}
 							}
 						}
-						$this->message->reply($reply);
-						$this->logger->addInfo("User successfully authed: " . $eveName);
-					} else {
-						$this->message->reply("**Failure:** There are no roles available for your corp/alliance.");
-						$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $eveName);
-					}        
-					
-                    return null;
-                }
-
-            }
-            $this->message->reply("**Failure:** There was an issue with your code.");
-            $this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $userName);
-            return null;
-        }
-        return null;
+						if (array_key_exists($corpid, $this->corpRoles)) {                        
+							foreach ($roles as $role) {
+								$roleName = $role->name;
+								if ($roleName == $this->corpRoles[$corpid]) {
+									array_push($grantedRoles, $role);
+									$member->addrole($role);										
+									if (!$flag) {
+										$flag = 'true';
+										// Only insert new database entry for corp if no authorized alliance
+										insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'corp');
+										disableReg($this->db, $this->dbUser, $this->dbPass, $this->dbName, $code);
+									}								
+									break;
+								}						
+							}
+						}
+						if ($flag) {
+							$reply = "**Success:** You have successfully been added to the following groups: ";
+							$flag2 = 'false';
+							foreach ($grantedRoles as $role) {
+								if ($flag2) {
+									$reply .= ", " . $role->name;
+								} else {
+									$reply .= $role->name;
+									$flag2 = 'true';
+								}
+							}
+							$this->message->reply($reply);
+							$this->logger->addInfo("User successfully authed: " . $eveName);
+						} else {
+							$this->message->reply("**Failure:** There are no roles available for your corp/alliance.");
+							$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $eveName);
+						}        
+						if ($this->nameEnforce == 'true') {
+							foreach ($xml->result->rowset->row as $character) {
+								$this->message->reply("Setting Nick " . $character->attributes()->name);
+								$member->setNickname($character->attributes()->name);				
+								break;
+							}
+						}
+						$members->save($member);
+					});                    										
+					return null;
+				}
+			}
+			$this->message->reply("**Failure:** There was an issue with your code.");
+			$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $userName);			
+			return null;
+		}
+		return null;
     }
     /**
      * @return array

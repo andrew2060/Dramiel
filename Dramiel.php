@@ -116,11 +116,9 @@ foreach ($pluginDirs as $dir) {
 // Number of chat plugins loaded
 $logger->addInfo("Loaded: " . count($plugins) . " chat plugins");
 
-$ws = $discord;
-
-$ws->on(
+$discord->on(
     'ready',
-    function($discord) use ($ws, $logger, $config, $plugins, $pluginsT) {
+    function($discord) use ($discord, $logger, $config, $plugins, $pluginsT) {
         // In here we can access any of the WebSocket events.
         //
         // There is a list of event constants that you can
@@ -128,30 +126,34 @@ $ws->on(
         //
         // We will echo to the console that the WebSocket is ready.
         $logger->addInfo('Discord WebSocket is ready!' . PHP_EOL);
-        $game = $ws->factory->create(Game::class, array('name' => $config["bot"]["game"], 'url' => null, 'type' => null), true);
-        $ws->updatePresence($game, false);
-        // $ws->setNickname($config["bot"]["name"]); //not in yet
+        $game = $discord->factory(Game::class, [
+			'name' => $config["bot"]["game"],
+			'url' => null,
+			'type' => null,
+		], true);
+        $discord->updatePresence($game, false);
+        // $discord->setNickname($config["bot"]["name"]); //not in yet
 
         // Database check
-        $ws->loop->addPeriodicTimer(86400, function() use ($logger) {
+        $discord->loop->addPeriodicTimer(86400, function() use ($logger) {
             updateDramielDB($logger); 
             updateCCPData($logger);
         });
         
         // Run the Tick plugins
-        $ws->loop->addPeriodicTimer(1, function() use ($pluginsT) {
+        $discord->loop->addPeriodicTimer(1, function() use ($pluginsT) {
             foreach ($pluginsT as $plugin)
                 $plugin->tick();
         });
 
         // Mem cleanup every 30 minutes
-        $ws->loop->addPeriodicTimer(1800, function() use ($logger) {
+        $discord->loop->addPeriodicTimer(1800, function() use ($logger) {
             $logger->addInfo("Memory in use: " . memory_get_usage() / 1024 / 1024 . "MB");
             gc_collect_cycles(); // Collect garbage
             $logger->addInfo("Memory in use after garbage collection: " . memory_get_usage() / 1024 / 1024 . "MB");
         });
 
-        $ws->on(
+        $discord->on(
             Event::MESSAGE_CREATE,
             function($message, $discord, $newdiscord) use ($logger, $config, $plugins) {
 
@@ -192,23 +194,23 @@ $ws->on(
         );
     }
 );
-$ws->on(
+$discord->on(
     'error',
-    function($error, $ws) use ($logger) {
+    function($error, $discord) use ($logger) {
         $logger->addError($error);
         exit(1);
     }
 );
-$ws->on(
+$discord->on(
     'reconnecting',
     function() use ($logger) {
         $logger->addInfo('Websocket is reconnecting..');
 });
-$ws->on(
+$discord->on(
     'reconnected',
     function() use ($logger) {
         $logger->addInfo('Websocket was reconnected..');
 });
 // Now we will run the ReactPHP Event Loop!
-$ws->run();
+$discord->run();
 
