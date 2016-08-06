@@ -128,7 +128,7 @@ class authCheck
                     $xml = makeApiRequest($url);
                     if ($xml->result->rowset->row[0]) {
                         foreach ($xml->result->rowset->row as $character) {
-                            if (!array_key_exists($character->attributes()->allianceID, $allianceRoles) && !array_key_exists($character->attributes()->corporationID, $corpRoles)) {
+                            if (!array_key_exists($character->attributes()->allianceID, $allyRoles) && !array_key_exists($character->attributes()->corporationID, $corpRoles)) {
                                 foreach ($roles as $role) {
                                     $member->removeRole($role);
                                     $member->save();
