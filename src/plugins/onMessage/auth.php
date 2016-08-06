@@ -43,8 +43,10 @@ class auth
     var $logger;
     var $solarSystems;
     var $triggers = array();
-    public $roleName;
-    public $corpID;
+	public $corpRoles;
+	public $allianceRoles;
+    //public $roleName;
+    //public $corpID;
     public $db;
     public $dbUser;
     public $dbPass;
@@ -52,8 +54,8 @@ class auth
     public $forceName;
     public $ssoUrl;
     public $nameEnforce;
-    public $allianceID;
-    public $allyroleName;
+    //public $allianceID;
+    //public $allyroleName;
 
     /**
      * @param $config
@@ -69,10 +71,13 @@ class auth
         $this->dbUser = $config["database"]["user"];
         $this->dbPass = $config["database"]["pass"];
         $this->dbName = $config["database"]["database"];
-        $this->corpID = (int) $config["plugins"]["auth"]["corpID"];
-        $this->allianceID = (int) $config["plugins"]["auth"]["allianceID"];
-        $this->roleName = $config["plugins"]["auth"]["corpMemberRole"];
-        $this->allyroleName = $config["plugins"]["auth"]["allyMemberRole"];
+		
+		$this->corpRoles = $config["plugins"]["auth"]["corpRoles"];
+		$this->allianceRoles = $config["plugins"]["auth"]["allianceRoles"];
+        //$this->corpID = $config["plugins"]["auth"]["corpID"];
+        //$this->allianceID = $config["plugins"]["auth"]["allianceID"];
+        //$this->roleName = $config["plugins"]["auth"]["corpMemberRole"];
+        //$this->allyroleName = $config["plugins"]["auth"]["allyMemberRole"];
         $this->nameEnforce = $config["plugins"]["auth"]["nameEnforce"];
         $this->ssoUrl = $config["plugins"]["auth"]["url"];
     }
@@ -120,10 +125,10 @@ class auth
                 $allianceid = (int) $rows['allianceID'];
                 $url = "https://api.eveonline.com/eve/CharacterName.xml.aspx?ids=$charid";
                 $xml = makeApiRequest($url);
+				$flag = 'false';
 
 
-
-                // We have an error, show it it
+                // We have an error, show it 
                 if ($xml->error) {
                     $this->message->reply("**Failure:** Eve API error, please try again in a little while.");
                     return null;
@@ -142,42 +147,65 @@ class auth
                         }
                     }
                 }
+				$grantedRoles = array();
                 foreach ($xml->result->rowset->row as $character) {
                     $eveName = $character->attributes()->name;
-                    if ($corpid === $this->corpID) {
+                    
+                    if (array_key_exists($allianceid, $this->allianceRoles)) {
                         $roles = $this->message->getFullChannelAttribute()->getGuildAttribute()->getRolesAttribute();
                         $member = $this->message->getFullChannelAttribute()->getGuildAttribute()->getMembersAttribute()->get("id", $userID);
                         foreach ($roles as $role) {
                             $roleName = $role->name;
-                            if ($roleName == $this->roleName) {
+                            if ($roleName == $this->allianceRoles[$allianceid]) {
                                 $member->addRole($role);
                                 $member->save();
-                                insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'corp');
-                                disableReg($this->db, $this->dbUser, $this->dbPass, $this->dbName, $code);
-                                $this->message->reply("**Success:** You have now been added to the " . $this->roleName . " group. To get more roles, talk to the CEO / Directors");
-                                $this->logger->addInfo("User authed and added to corp group " . $eveName);
-                                return null;
-                            }
-                        }
-                    }
-                    if ($allianceid === $this->allianceID) {
-                        $roles = $this->message->getFullChannelAttribute()->getGuildAttribute()->getRolesAttribute();
-                        $member = $this->message->getFullChannelAttribute()->getGuildAttribute()->getMembersAttribute()->get("id", $userID);
-                        foreach ($roles as $role) {
-                            $roleName = $role->name;
-                            if ($roleName == $this->allyroleName) {
-                                $member->addRole($role);
-                                $member->save();
+								$grantedRoles = $role;
+								if (!$flag) {
+									$flag = 'true';
+								}
                                 insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'ally');
                                 disableReg($this->db, $this->dbUser, $this->dbPass, $this->dbName, $code);
-                                $this->message->reply("**Success:** You have now been added to the " . $this->allyroleName . " group. To get more roles, talk to the CEO / Directors");
-                                $this->logger->addInfo("User authed and added to the alliance group " . $eveName);
-                                return null;
+                                break;
                             }
                         }
                     }
-                    $this->message->reply("**Failure:** There are no roles available for your corp/alliance.");
-                    $this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $eveName);
+					if (array_key_exists($corpid, $this->corpRoles)) {
+                        $roles = $this->message->getFullChannelAttribute()->getGuildAttribute()->getRolesAttribute();
+                        $member = $this->message->getFullChannelAttribute()->getGuildAttribute()->getMembersAttribute()->get("id", $userID);
+                        foreach ($roles as $role) {
+                            $roleName = $role->name;
+                            if ($roleName == $this->corpRoles[$corpid]) {
+								$grantedRoles = $role;
+                                $member->addRole($role);
+                                $member->save();
+								if (!$flag) {
+									$flag = 'true';
+									// Only insert new database entry for corp if no authorized alliance
+									insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'corp');
+									disableReg($this->db, $this->dbUser, $this->dbPass, $this->dbName, $code);
+								}								
+								break;
+                            }						
+                        }
+                    }
+					if ($flag) {
+						$reply = "**Success:** You have successfully been added to the following groups: ";
+						$flag2 = 'false';
+						foreach ($grantedRoles as $role) {
+							if ($flag2) {
+								$reply = $reply . ", " . $role;
+							} else {
+								$reply = $reply . $role;
+								$flag2 = 'true';
+							}
+							
+						}
+						$this->message->reply($reply);
+						$this->logger->addInfo("User succcssfully authed: " . $eveName);
+					} else {
+						$this->message->reply("**Failure:** There are no roles available for your corp/alliance.");
+						$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $eveName);
+					}                   
                     return null;
                 }
 

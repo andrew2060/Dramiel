@@ -106,8 +106,8 @@ class authCheck
             $dbUser = $this->config["database"]["user"];
             $dbPass = $this->config["database"]["pass"];
             $dbName = $this->config["database"]["database"];
-            $allyID = $this->config["plugins"]["auth"]["allianceID"];
-            $corpID = $this->config["plugins"]["auth"]["corpID"];
+            $allyRoles = $this->config["plugins"]["auth"]["allianceRoles"];
+            $corpRoles = $this->config["plugins"]["auth"]["corpRoles"];
             $toDiscordChannel = $this->config["plugins"]["auth"]["alertChannel"];
             $conn = new mysqli($db, $dbUser, $dbPass, $dbName);
 
@@ -128,7 +128,7 @@ class authCheck
                     $xml = makeApiRequest($url);
                     if ($xml->result->rowset->row[0]) {
                         foreach ($xml->result->rowset->row as $character) {
-                            if ($character->attributes()->allianceID != $allyID && $character->attributes()->corporationID != $corpID) {
+                            if (!array_key_exists($character->attributes()->allianceID, $allianceRoles) && !array_key_exists($character->attributes()->corporationID, $corpRoles)) {
                                 foreach ($roles as $role) {
                                     $member->removeRole($role);
                                     $member->save();
@@ -157,21 +157,22 @@ class authCheck
                         $eveName = $rows['eveName'];
                         $guild = $this->discord->guilds->first();
                         $member = $guild->members->get("id", $discordID);
-                        $discordName = $member->user->username;
+                        $discordName = $member->user->nick;
                         if ($discordName != $eveName) {
-                            foreach ($roles as $role) {
-                                $member->removeRole($role);
-                            }
+							$member->user->setNickname($eveName);
+//                            foreach ($roles as $role) {
+//                                $member->removeRole($role);
+//                            }
+//
+//                            // Send the info to the channel
+//                            $msg = $discordName . " roles have been removed because their name no longer matches their ingame name.";
+//                            $channelID = $toDiscordChannel;
+//                            $channel = Channel::find($channelID);
+//                            $channel->sendMessage($msg, false);
+//                            $this->logger->addInfo($discordName . " roles have been removed because their name no longer matches their ingame name.");
 
-                            // Send the info to the channel
-                            $msg = $discordName . " roles have been removed because their name no longer matches their ingame name.";
-                            $channelID = $toDiscordChannel;
-                            $channel = Channel::find($channelID);
-                            $channel->sendMessage($msg, false);
-                            $this->logger->addInfo($discordName . " roles have been removed because their name no longer matches their ingame name.");
-
-                            $sql = "UPDATE authUsers SET active='no' WHERE discordID='$discordID'";
-                            $conn->query($sql);
+//                            $sql = "UPDATE authUsers SET active='no' WHERE discordID='$discordID'";
+//                            $conn->query($sql);
                         }
                     }
                     $this->logger->addInfo("All users names have been checked.");
