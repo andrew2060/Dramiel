@@ -183,7 +183,7 @@ class auth
 						$flag2 = 'false';
 						foreach ($grantedRoles as $role) {
 							if ($flag2) {
-								$reply .= . ", " . $role;
+								$reply .= ", " . $role;
 							} else {
 								$reply .= $role;
 								$flag2 = 'true';

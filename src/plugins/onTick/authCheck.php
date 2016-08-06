@@ -128,8 +128,13 @@ class authCheck
                     $xml = makeApiRequest($url);
                     if ($xml->result->rowset->row[0]) {
                         foreach ($xml->result->rowset->row as $character) {
-                            if (!array_key_exists($character->attributes()->allianceID, $allyRoles) && !array_key_exists($character->attributes()->corporationID, $corpRoles)) {
+							$allyid = (int) $character->attributes()->allianceID;
+							$corpid = (int) $character->attributes()->corporationID;
+                            if (!array_key_exists($allyid, $allyRoles) && !array_key_exists($corpid, $corpRoles)) {								
                                 foreach ($roles as $role) {
+									if ($role->name === "System Administrator") { // Refuse to remove sysadmin for sanity reasons
+										break;
+									}
                                     $member->removeRole($role);
                                     $member->save();
                                 }
