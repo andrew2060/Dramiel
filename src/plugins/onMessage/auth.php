@@ -140,7 +140,6 @@ class auth
 									'nick' => $character->attributes()->name,
 								]							
 							);
-							$this->discord->guilds->first()->members->get("id", $userID)->setNickname($character->attributes()->name);
                             $this->message->reply("**Failure:** Your discord name must match your character name.");
                             $this->logger->addInfo("User was denied due to not having the correct name " . $character->attributes()->name);
                             return null;
@@ -160,7 +159,7 @@ class auth
                             if ($roleName == $this->allianceRoles[$allianceid]) {
                                 $member->addRole($role);
                                 $member->save();
-								$grantedRoles = $role;
+								$grantedRoles = $roleName;
 								if (!$flag) {
 									$flag = 'true';
 								}
@@ -176,7 +175,7 @@ class auth
                         foreach ($roles as $role) {
                             $roleName = $role->name;
                             if ($roleName == $this->corpRoles[$corpid]) {
-								$grantedRoles = $role;
+								$grantedRoles = $roleName;
                                 $member->addRole($role);
                                 $member->save();
 								if (!$flag) {
