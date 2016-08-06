@@ -70,7 +70,6 @@ updateCCPData($logger);
 use Discord\Discord;
 use Discord\Parts\User\Game;
 use Discord\WebSockets\Event;
-use Discord\WebSockets\WebSocket;
 
 $discord = new Discord(["token" => $config["bot"]["token"]]);
 
@@ -117,7 +116,7 @@ foreach ($pluginDirs as $dir) {
 // Number of chat plugins loaded
 $logger->addInfo("Loaded: " . count($plugins) . " chat plugins");
 
-$ws = new WebSocket($discord);
+$ws = $discord;
 
 $ws->on(
     'ready',
