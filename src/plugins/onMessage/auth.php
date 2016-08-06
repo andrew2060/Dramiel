@@ -135,7 +135,7 @@ class auth
                     foreach ($xml->result->rowset->row as $character) {
                         if ($character->attributes()->name != $userName) {
 							Guzzle::patch(
-								"guilds/{$this->config["bot"]["primary"]}/members/{$userID}",
+								"guilds/{$this->message->getFullChannelAttribute()[@guild_id]}/members/{$userID}",
 								[
 									'nick' => $character->attributes()->name,
 								]							
