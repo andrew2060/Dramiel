@@ -149,7 +149,7 @@ class auth
                             if ($roleName == $this->allianceRoles[$allianceid]) {
                                 $member->addRole($role);
                                 $member->save();
-								$grantedRoles = array_push($grantedRoles, $roleName);
+								array_push($grantedRoles, $roleName);
 								if (!$flag) {
 									$flag = 'true';
 								}
@@ -165,7 +165,7 @@ class auth
                         foreach ($roles as $role) {
                             $roleName = $role->name;
                             if ($roleName == $this->corpRoles[$corpid]) {
-								$grantedRoles = array_push($grantedRoles, $roleName);
+								array_push($grantedRoles, $roleName);
                                 $member->addRole($role);
                                 $member->save();
 								if (!$flag) {
@@ -183,19 +183,19 @@ class auth
 						$flag2 = 'false';
 						foreach ($grantedRoles as $role) {
 							if ($flag2) {
-								$reply = $reply . ", " . $role;
+								$reply .= . ", " . $role;
 							} else {
-								$reply = $reply . $role;
+								$reply .= $role;
 								$flag2 = 'true';
 							}
-							
 						}
 						$this->message->reply($reply);
-						$this->logger->addInfo("User succcssfully authed: " . $eveName);
+						$this->logger->addInfo("User successfully authed: " . $eveName);
 					} else {
 						$this->message->reply("**Failure:** There are no roles available for your corp/alliance.");
 						$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $eveName);
-					}                   
+					}        
+					
                     return null;
                 }
 
