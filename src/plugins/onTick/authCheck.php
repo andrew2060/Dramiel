@@ -150,36 +150,7 @@ class authCheck
                 }
                 $this->logger->addInfo("All users successfully authed.");
                 $nextCheck = time() + 7200;
-                setPermCache("authLastChecked", $nextCheck);
-                if ($this->config["plugins"]["auth"]["nameEnforce"] == "true") {
-                    while ($rows = $result->fetch_assoc()) {
-                        $discordID = $rows['discordID'];
-                        $eveName = $rows['eveName'];
-                        $guild = $this->discord->guilds->first();
-                        $member = $guild->members->get("id", $discordID);
-                        $discordName = $member->user->nick;
-                        if ($discordName != $eveName) {
-							$member->user->setNickname($eveName);
-//                            foreach ($roles as $role) {
-//                                $member->removeRole($role);
-//                            }
-//
-//                            // Send the info to the channel
-//                            $msg = $discordName . " roles have been removed because their name no longer matches their ingame name.";
-//                            $channelID = $toDiscordChannel;
-//                            $channel = Channel::find($channelID);
-//                            $channel->sendMessage($msg, false);
-//                            $this->logger->addInfo($discordName . " roles have been removed because their name no longer matches their ingame name.");
-
-//                            $sql = "UPDATE authUsers SET active='no' WHERE discordID='$discordID'";
-//                            $conn->query($sql);
-                        }
-                    }
-                    $this->logger->addInfo("All users names have been checked.");
-                    $cacheTimer = gmdate("Y-m-d H:i:s", $nextCheck);
-                    $this->logger->addInfo("Next auth and name check at {$cacheTimer} EVE");
-                    return null;
-                }
+                setPermCache("authLastChecked", $nextCheck);               
                 $cacheTimer = gmdate("Y-m-d H:i:s", $nextCheck);
                 $this->logger->addInfo("Next auth and name check at {$cacheTimer} EVE");
                 return null;
