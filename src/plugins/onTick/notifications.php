@@ -99,10 +99,6 @@ class notifications
         $this->keyID = $config["eve"]["apiKeys"]["user1"]["keyID"];
         $this->vCode = $config["eve"]["apiKeys"]["user1"]["vCode"];
         $this->characterID = $config["eve"]["apiKeys"]["user1"]["characterID"];
-        // Rena APIs
-        $this->charApi = "http://rena.karbowiak.dk/api/character/information/";
-        $this->corpApi = "http://rena.karbowiak.dk/api/corporation/information/";
-        $this->alliApi = "http://rena.karbowiak.dk/api/alliance/information/";
         $lastCheck = getPermCache("notificationsLastChecked{$this->keyID}");
         if ($lastCheck == NULL) {
             // Schedule it for right now if first run
@@ -178,18 +174,18 @@ class notifications
                     switch ($typeID) {
                         case 5: // War Declared
                             $aggAllianceID = trim(explode(": ", $notificationString[2])[1]);
-                            $aggAllianceName = $this->apiData("alli", $aggAllianceID)["allianceName"];
+                            $aggAllianceName = $this->apiData($aggAllianceID);
                             $delayHours = trim(explode(": ", $notificationString[3])[1]);
                             $msg = "@everyone | War declared by {$aggAllianceName}. Fighting begins in roughly {$delayHours} hours.";
                             break;
                         case 7: // War Declared corp
                             $aggCorpID = trim(explode(": ", $notificationString[2])[1]);
-                            $aggCorpName = $this->apiData("corp", $aggCorpID)["corporationName"];
+                            $aggCorpName = $this->apiData($aggCorpID);
                             $msg = "@everyone | War declared by {$aggCorpName}. Fighting begins in roughly 24 hours.";
                             break;
                         case 8: // Alliance war invalidated by CONCORD
                             $aggAllianceID = trim(explode(": ", $notificationString[2])[1]);
-                            $aggAllianceName = $this->apiData("alli", $aggAllianceID)["allianceName"];
+                            $aggAllianceName = $this->apiData($aggAllianceID);
                             $msg = "War declared by {$aggAllianceName} has been invalidated. Fighting ends in roughly 24 hours.";
                             break;
                         case 10: // Bill issued
@@ -206,7 +202,7 @@ class notifications
                             break;
                         case 19: // corp tax changed
                             $corpID = trim(explode(": ", $notificationString[0])[1]);
-                            $corpName = $this->apiData("corp", $corpID)["corporationName"];
+                            $corpName = $this->apiData($corpID);
                             $oldTax = trim(explode(": ", $notificationString[2])[1]);
                             $newTax = trim(explode(": ", $notificationString[1])[1]);
                             $msg = "{$corpName} tax changed from {$oldTax}% to {$newTax}%";
@@ -222,7 +218,7 @@ class notifications
                             $systemName = dbQueryField("SELECT solarSystemName FROM mapSolarSystems WHERE solarSystemID = :id",
                                 "solarSystemName", array(":id" => $systemID), "ccp");
                             $allianceID = trim(explode(": ", $notificationString[0])[1]);
-                            $allianceName = $this->apiData("alli", $allianceID)["allianceName"];
+                            $allianceName = $this->apiData($allianceID);
                             $msg = "{$allianceName} has lost control of **{$systemName}**";
                             break;
                         case 43: // System captured
@@ -230,7 +226,7 @@ class notifications
                             $systemName = dbQueryField("SELECT solarSystemName FROM mapSolarSystems WHERE solarSystemID = :id",
                                 "solarSystemName", array(":id" => $systemID), "ccp");
                             $allianceID = trim(explode(": ", $notificationString[0])[1]);
-                            $allianceName = $this->apiData("alli", $allianceID)["allianceName"];
+                            $allianceName = $this->apiData($allianceID);
                             $msg = "{$allianceName} now controls **{$systemName}**";
                             break;
                         case 52: // clone revoked
@@ -244,11 +240,11 @@ class notifications
                             break;
                         case 75: // POS / POS Module under attack
                             $aggAllianceID = trim(explode(": ", $notificationString[0])[1]);
-                            $aggAllianceName = $this->apiData("alli", $aggAllianceID)["allianceName"];
+                            $aggAllianceName = $this->apiData($aggAllianceID);
                             $aggCorpID = trim(explode(": ", $notificationString[1])[1]);
-                            $aggCorpName = $this->apiData("corp", $aggCorpID)["corporationName"];
+                            $aggCorpName = $this->apiData($aggCorpID);
                             $aggID = trim(explode(": ", $notificationString[2])[1]);
-                            $aggCharacterName = $this->apiData("char", $aggID)["characterName"];
+                            $aggCharacterName = $this->apiData($aggID);
                             $armorValue = trim(explode(": ", $notificationString[3])[1]);
                             $hullValue = trim(explode(": ", $notificationString[4])[1]);
                             $moonID = trim(explode(": ", $notificationString[5])[1]);
@@ -279,11 +275,11 @@ class notifications
                             break;
                         case 88: // IHUB is being attacked
                             $aggAllianceID = trim(explode(": ", $notificationString[0])[1]);
-                            $aggAllianceName = $this->apiData("alli", $aggAllianceID)["allianceName"];
+                            $aggAllianceName = $this->apiData($aggAllianceID);
                             $aggCorpID = trim(explode(": ", $notificationString[0])[1]);
-                            $aggCorpName = $this->apiData("corp", $aggCorpID)["corporationName"];
+                            $aggCorpName = $this->apiData($aggCorpID);
                             $aggID = trim(explode(": ", $notificationString[1])[1]);
-                            $aggCharacterName = $this->apiData("char", $aggID)["characterName"];
+                            $aggCharacterName = $this->apiData($aggID);
                             $armorValue = trim(explode(": ", $notificationString[3])[1]);
                             $hullValue = trim(explode(": ", $notificationString[4])[1]);
                             $shieldValue = trim(explode(": ", $notificationString[5])[1]);
@@ -294,11 +290,11 @@ class notifications
                             break;
                         case 93: // Customs office is being attacked
                             $aggAllianceID = trim(explode(": ", $notificationString[0])[1]);
-                            $aggAllianceName = $this->apiData("alli", $aggAllianceID)["allianceName"];
+                            $aggAllianceName = $this->apiData($aggAllianceID);
                             $aggCorpID = trim(explode(": ", $notificationString[0])[1]);
-                            $aggCorpName = $this->apiData("corp", $aggCorpID)["corporationName"];
+                            $aggCorpName = $this->apiData($aggCorpID);
                             $aggID = trim(explode(": ", $notificationString[2])[1]);
-                            $aggCharacterName = $this->apiData("char", $aggID)["characterName"];
+                            $aggCharacterName = $this->apiData($aggID);
                             $planetID = trim(explode(": ", $notificationString[3])[1]);
                             $planetName = dbQueryField("SELECT itemName FROM mapAllCelestials WHERE itemID = :id",
                                 "itemName", array(":id" => $planetID), "ccp");
@@ -394,12 +390,12 @@ class notifications
                             break;
                         case 184: //  Citadel under attack
                             $aggID = trim(explode(": ", $notificationString[7])[1]);
-                            $aggCharacterName = $this->apiData("char", $aggID)["characterName"];
+                            $aggCharacterName = $this->apiData($aggID);
                             $solarSystemID = trim(explode(": ", $notificationString[15])[1]);
                             $aggAllianceID = trim(explode(": ", $notificationString[0])[1]);
-                            $aggAllianceName = $this->apiData("alli", $aggAllianceID)["allianceName"];
+                            $aggAllianceName = $this->apiData($aggAllianceID);
                             $aggCorpID = trim(explode("- ", $notificationString[11])[1]);
-                            $aggCorpName = $this->apiData("corp", $aggCorpID)["corporationName"];
+                            $aggCorpName = $this->apiData($aggCorpID);
                             $systemName = dbQueryField("SELECT solarSystemName FROM mapSolarSystems WHERE solarSystemID = :id",
                                 "solarSystemName", array(":id" => $solarSystemID), "ccp");
                             $msg = "@everyone | Citadel under attack in **{$systemName}** by **{$aggCharacterName}** ({$aggCorpName} / {$aggAllianceName}).";
@@ -412,7 +408,7 @@ class notifications
                             break;
                         case 188: //  Citadel destroyed
                             $corpID = trim(explode("- ", $notificationString[3])[1]);
-                            $corpName = $this->apiData("corp", $corpID)["corporationName"];
+                            $corpName = $this->apiData($corpID);
                             $solarSystemID = trim(explode(": ", $notificationString[5])[1]);
                             $systemName = dbQueryField("SELECT solarSystemName FROM mapSolarSystems WHERE solarSystemID = :id",
                                 "solarSystemName", array(":id" => $solarSystemID), "ccp");
@@ -470,26 +466,20 @@ class notifications
     }
 
     /**
-     * @param string $type
      * @param string $typeID
      * @return mixed
      */
-    function apiData($type, $typeID)
+    function apiData($typeID)
     {
-        $downloadFrom = "";
-        switch ($type) {
-            case "char":
-                $downloadFrom = $this->charApi;
-                break;
-            case "corp":
-                $downloadFrom = $this->corpApi;
-                break;
-            case "alli":
-                $downloadFrom = $this->alliApi;
-                break;
+        $url = "https://api.eveonline.com/eve/CharacterName.xml.aspx?IDs={$typeID}";
+        $xml = makeApiRequest($url);
+        foreach ($xml->result->rowset->row as $entity) {
+            $name = $entity->attributes()->name;
         }
-        return json_decode(downloadData($downloadFrom . $typeID . "/"), true);
+        return $name;
     }
+
+
     /**
      * @return array
      */
