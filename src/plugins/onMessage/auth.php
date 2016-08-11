@@ -203,9 +203,11 @@ class auth
 						}        
 						if ($this->nameEnforce == 'true') {
 							foreach ($xml->result->rowset->row as $character) {
-								$member->setNickname($character->attributes()->name)->then(function () use ($character) {
+								$member->setNickname((string) $character->attributes()->name)->then(function () use ($character) {
 									$this->message->reply("Setting Nick " . $character->attributes()->name);
-								});				
+								})->otherwise(function ($e) use ($charater) {
+                                     $this->message->reply("Error setting Nick " . $e->getMessage());
+								});
 								break;
 							}
 						}
