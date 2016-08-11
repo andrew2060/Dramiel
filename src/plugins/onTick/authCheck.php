@@ -121,37 +121,35 @@ class authCheck
                     $charID = $rows['characterID'];
                     $discordID = $rows['discordID'];
                     $guild = $this->discord->guilds->first();
-                    $member = $guild->members->get("id", $discordID);
-                    $eveName = $rows['eveName'];
-                    $roles = $member->roles;
-                    $url = "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx?ids=$charID";
-                    $xml = makeApiRequest($url);
-                    if ($xml->result->rowset->row[0]) {
-                        foreach ($xml->result->rowset->row as $character) {
-							$allyid = (int) $character->attributes()->allianceID;
-							$corpid = (int) $character->attributes()->corporationID;
-                            if (!array_key_exists($allyid, $allyRoles) && !array_key_exists($corpid, $corpRoles)) {								
-                                foreach ($roles as $role) {
-									if ($role->name === "System Administrator") { // Refuse to remove sysadmin for sanity reasons
-										break;
+                    $members = $guild->members;
+					$members->fetch($discordID)->then(function ($member) use ($db, $dbUser, $dbPass, $dbName, $allyRoles, $corpRoles, $toDiscordChannel, $conn, $sql, $rows, $result, $charID, $discordID, $guild, $members) {
+						$eveName = $rows['eveName'];
+						$roles = $member->roles;
+						$url = "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx?ids=$charID";
+						$xml = makeApiRequest($url);
+						if ($xml->result->rowset->row[0]) {
+							foreach ($xml->result->rowset->row as $character) { 
+								$allyid = (int) $character->attributes()->allianceID;
+								$corpid = (int) $character->attributes()->corporationID;
+								if (!array_key_exists($allyid, $allyRoles) && !array_key_exists($corpid, $corpRoles)) {								
+									foreach ($roles as $role) { 
+										$member->removeRole($role);
 									}
-                                    $member->removeRole($role);
-                                    $member->save();
-                                }
 
-                                // Send the info to the channel
-                                $msg = "{$eveName} roles have been removed via the auth.";
-                                $channelID = $toDiscordChannel;
-                                $channel = Channel::find($channelID);
-                                $channel->sendMessage($msg, false);
-                                $this->logger->addInfo("{$eveName} roles ({$role}) have been removed via the auth.");
-
-                                $sql = "UPDATE authUsers SET active='no' WHERE discordID='$discordID'";
-                                $conn->query($sql);
-
-                            }
-                        }
-                    }
+									// Send the info to the channel
+									$msg = "{$eveName} roles have been removed via the auth.";
+									$channelID = $toDiscordChannel;
+									$channel = Channel::find($channelID);
+									$channel->sendMessage($msg, false);
+									$this->logger->addInfo("{$eveName} roles ({$role}) have been removed via the auth.");
+	
+									$sql = "UPDATE authUsers SET active='no' WHERE discordID='$discordID'";
+									$conn->query($sql);
+								}
+							}
+						}
+						$members->save($member);
+					});                   
                 }
                 $this->logger->addInfo("All users successfully authed.");
                 $nextCheck = time() + 7200;
