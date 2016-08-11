@@ -92,7 +92,8 @@ class auth
         $this->message = $message;
         $userID = $msgData["message"]["fromID"];
         $userName = $msgData["message"]["from"];
-        $message = $msgData["message"]["message"];
+        $message = $msgData["message"]["message"];		
+		$defaultRole = $this->config["plugins"]["auth"]["defaultRole"];
         $data = command($message, $this->information()["trigger"], $this->config["bot"]["trigger"]);
         if (isset($data["trigger"])) {
             if (isset($this->config["bot"]["primary"])) {
@@ -130,15 +131,28 @@ class auth
                 if (!isset($xml->result->rowset->row)) {
                     $this->message->reply("**Failure:** Eve API error, please try again in a little while.");
                     return null;
-                } 
+                } 							
 				
                 foreach ($xml->result->rowset->row as $character) {
                     $eveName = $character->attributes()->name;
                     $roles = $this->message->getChannelAttribute()->getGuildAttribute()->roles;
 					$members = $this->message->getChannelAttribute()->getGuildAttribute()->members;
-					$members->fetch($userID)->then(function ($member) use ($roles, $xml, $charid, $corpid, $allianceid, $message, $data, $userID, $userName, $eveName, $code, $members) {
+					$members->fetch($userID)->then(function ($member) use ($roles, $xml, $charid, $corpid, $allianceid, $message, $data, $userID, $userName, $eveName, $code, $members, $defaultRole) {
 						$grantedRoles = array();
 						$flag = 'false';
+							foreach ($roles as $role) {
+								$roleName = $role->name;
+								if ($roleName == $defaultRole) {
+									$member->addrole($role);
+									array_push($grantedRoles, $role);
+									if (!$flag) {
+										$flag = 'true';
+									}
+									insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'ally');
+									disableReg($this->db, $this->dbUser, $this->dbPass, $this->dbName, $code);
+									break;
+								}
+							}
 						if (array_key_exists($allianceid, $this->allianceRoles)) {
 							foreach ($roles as $role) {
 								$roleName = $role->name;
@@ -189,8 +203,9 @@ class auth
 						}        
 						if ($this->nameEnforce == 'true') {
 							foreach ($xml->result->rowset->row as $character) {
-								$this->message->reply("Setting Nick " . $character->attributes()->name);
-								$member->setNickname($character->attributes()->name);				
+								$member->setNickname($character->attributes()->name)->then(function () use ($character) {
+									$this->message->reply("Setting Nick " . $character->attributes()->name);
+								});				
 								break;
 							}
 						}

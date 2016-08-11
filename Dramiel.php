@@ -170,14 +170,6 @@ $discord->on(
                     )
                 );
 
-                if ($message->content == '(╯°□°）╯︵ ┻━┻') {
-                    $message->reply('┬─┬﻿ ノ( ゜-゜ノ)');
-                }
-
-                // We are just checking if the message equals to ping and replying to the user with a pong!
-                if ($message->content == 'ping') {
-                    $message->reply('pong!');
-                }
                 // Check for plugins
                 if (isset($message->content[0])) {
                     if ($message->content[0] == $config["bot"]["trigger"]) {
