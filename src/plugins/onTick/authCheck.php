@@ -139,10 +139,11 @@ class authCheck
 									// Send the info to the channel
 									$msg = "{$eveName} roles have been removed via the auth.";
 									$channelID = $toDiscordChannel;
-									$channel = Channel::find($channelID);
-									$channel->sendMessage($msg, false);
-									$this->logger->addInfo("{$eveName} roles ({$role}) have been removed via the auth.");
-	
+									$channelRepo = $guild->channels;
+									$channelRepo->fetch($channelID)->then(function ($channel) use ($msg) {
+										$channel->sendMessage($msg, false);
+									});									
+									$this->logger->addInfo("{$eveName}'s roles have been removed via auth.");	
 									$sql = "UPDATE authUsers SET active='no' WHERE discordID='$discordID'";
 									$conn->query($sql);
 								}
