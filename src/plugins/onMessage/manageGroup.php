@@ -26,10 +26,10 @@
 use Discord\Helpers\Guzzle;
 
 /**
- * Class notify
+ * Class manageGroup
  * @property Discord\Parts\Channel\Message message
  */
-class notify
+class manageGroup
 {
     /**
      * @var
@@ -140,7 +140,7 @@ class notify
                                     });
                             });
                     }
-                    $sql = "INSERT INTO 'authgroup_members' (group, discordID) VALUES ('{$opt}', {$user->id})";
+                    $sql = "INSERT INTO 'authgroup_members' (`group`, `discordID`) VALUES ('{$opt}', {$user->id})";
                     executeUpdatingQuery($this->db, $this->dbUser, $this->dbPass, $this->dbName, $sql);
                 }
             } else {

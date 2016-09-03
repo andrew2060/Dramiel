@@ -120,3 +120,37 @@ function selectPending($url, $user, $pass, $dbName, $authCode) {
     }
     return null;
 }
+
+
+function submitNonUpdatingQuery($url, $user, $pass, $dbName, $query) {
+    $host = $url;
+    $username = $user;
+    $password = $pass;
+    $database = $dbName;
+    $mysqli = mysqli_connect($host, $username, $password, $database);
+
+    if ($stmt = $mysqli->prepare($query)) {
+        // Execute the statement.
+        $stmt->execute();
+
+        // Return Row
+        $result = $stmt->get_result();
+
+        // Close the prepared statement.
+        $stmt->close();
+        return $result;
+    }
+}
+
+function executeUpdatingQuery($url, $user, $pass, $dbName, $query) {
+    $host = $url;
+    $username = $user;
+    $password = $pass;
+    $database = $dbName;
+    $mysqli = mysqli_connect($host, $username, $password, $database);
+
+    if ($stmt = $mysqli->prepare($query)) {
+        // Execute the statement.
+        $stmt->execute();
+    }
+}
