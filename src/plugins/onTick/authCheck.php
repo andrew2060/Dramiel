@@ -144,7 +144,7 @@ class authCheck
 										$channel->sendMessage($msg, false);
 									});									
 									$this->logger->addInfo("{$eveName}'s roles have been removed via auth.");	
-									$sql = "UPDATE authUsers SET active='no' WHERE discordID='$discordID'";
+									$sql = "UPDATE authUsers SET active='no' WHERE discordID='{$discordID}'";
 									$conn->query($sql);
 								}
 							}

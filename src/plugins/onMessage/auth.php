@@ -27,7 +27,7 @@
  
 /**
  * Class auth
- * @property  message
+ * @property Discord\Parts\Channel\Message message
  */
 class auth
 {
@@ -84,10 +84,10 @@ class auth
 
     /**
      * @param $msgData
-     * @param $message
+     * @param $message Discord\Parts\Channel\Message
      * @return null
      */
-    function onMessage($msgData, $message)
+    function onMessage($msgData, Discord\Parts\Channel\Message $message)
     {
         $this->message = $message;
         $userID = $msgData["message"]["fromID"];
@@ -137,13 +137,13 @@ class auth
                     $eveName = $character->attributes()->name;
                     $roles = $this->message->getChannelAttribute()->getGuildAttribute()->roles;
 					$members = $this->message->getChannelAttribute()->getGuildAttribute()->members;
-					$members->fetch($userID)->then(function ($member) use ($roles, $xml, $charid, $corpid, $allianceid, $message, $data, $userID, $userName, $eveName, $code, $members, $defaultRole) {
+					$members->fetch($userID)->then(function (Discord\Parts\User\Member $member) use ($roles, $xml, $charid, $corpid, $allianceid, $message, $data, $userID, $userName, $eveName, $code, $members, $defaultRole) {
 						$grantedRoles = array();
 						$flag = 'false';
 							foreach ($roles as $role) {
 								$roleName = $role->name;
 								if ($roleName == $defaultRole) {
-									$member->addrole($role);
+									$member->addRole($role);
 									array_push($grantedRoles, $role);
 									if (!$flag) {
 										$flag = 'true';
@@ -157,7 +157,7 @@ class auth
 							foreach ($roles as $role) {
 								$roleName = $role->name;
 								if ($roleName == $this->allianceRoles[$allianceid]) {
-									$member->addrole($role);
+									$member->addRole($role);
 									array_push($grantedRoles, $role);
 									if (!$flag) {
 										$flag = 'true';
@@ -173,7 +173,7 @@ class auth
 								$roleName = $role->name;
 								if ($roleName == $this->corpRoles[$corpid]) {
 									array_push($grantedRoles, $role);
-									$member->addrole($role);										
+									$member->addRole($role);
 									if (!$flag) {
 										$flag = 'true';
 										// Only insert new database entry for corp if no authorized alliance
@@ -205,13 +205,17 @@ class auth
 							foreach ($xml->result->rowset->row as $character) {
 								$member->setNickname((string) $character->attributes()->name)->then(function () use ($character) {
 									$this->message->reply("Setting Nick " . $character->attributes()->name);
-								})->otherwise(function ($e) use ($charater) {
+								})->otherwise(function (Exception $e) use ($character) {
                                      $this->message->reply("Error setting Nick " . $e->getMessage());
 								});
 								break;
 							}
 						}
-						$members->save($member);
+						$members->save($member)->then(function () use ($character) {
+						    $this->logger->addInfo("User successfully saved: " + $character);
+                        })->otherwise(function (Exception $e) use ($character) {
+                            $this->logger->addInfo("User " . $character ." failed to auth " . $e->getMessage());
+                        });
 					});                    										
 					return null;
 				}
