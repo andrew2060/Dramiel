@@ -163,14 +163,14 @@ class manageGroup
                     $this->message->getChannelAttribute()->getGuildAttribute()->members->fetch($user->id)->then(
                         function ($member) use ($row, $user, &$success, $opt, $channelRepo, $channelID) {
                             $channelRepo->fetch($channelID)->then(
-                                function ($channel) use ($row, $user, &$success, $opt) {
+                                function ($channel) use ($row, $user, &$success, $opt, $member) {
                                     // Initialize perms
                                     /* @var $permissions \Discord\Parts\Permissions\ChannelPermission */
                                     $permissions = $this->discord->factory(\Discord\Parts\Permissions\ChannelPermission::class);
                                     // Set perms
                                     $permissions->decodeBitwise(0, 0);
                                     /* @var $channel Discord\Parts\Channel\Channel */
-                                    $channel->setPermissions($user, $permissions)->then(function () use (&$success, $user, $opt) {
+                                    $channel->setPermissions($member, $permissions)->then(function () use (&$success, $user, $opt) {
                                         $this->message->reply($user->username . " was successfully removed from " . $opt);
                                         $success = true;
                                     });
