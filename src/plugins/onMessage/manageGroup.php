@@ -86,13 +86,16 @@ class manageGroup
         $userName = $msgData["message"]["from"];
         $message = $msgData["message"]["message"];
         $data = command($message, $this->information()["trigger"], $this->config["bot"]["trigger"]);
+        if (!isset($data["trigger"])) {
+            return null;
+        }
         $msgArr = $data["messageArray"];
         $opt = $msgArr[0];
-        $sql = "SELECT * FROM 'authgroup_managers' WHERE group = {$opt} AND discordID = {$userID}";
+        $sql = "SELECT * FROM `authgroup_managers` WHERE `group` = '{$opt}' AND `discordID` = {$userID};";
         $result = submitNonUpdatingQuery($this->db, $this->dbUser, $this->dbPass, $this->dbName, $sql);
-        $rows = $result->fetch_row();
-        if ($rows) { // Has the ability to manage group in question
+        if ($result != null && $result->num_rows > 0) { // Has the ability to manage group in question
             unset($msgArr[0]);
+            $result->close();
         } else {
             $this->message->reply("You lack the appropriate authorization to perform this action. This incident has been logged for further review");
             return null;
@@ -118,79 +121,88 @@ class manageGroup
         $mentions = $this->message->getMentionsAttribute();
         foreach ($mentions as $user) {
             if ($flag) {
-                $sql = "SELECT * FROM authgroup_roles WHERE group='{$opt}'";
+                $this->logger->addInfo("Attempting to add " . $user . " to " . $opt);
+                $sql = "SELECT * FROM authgroup_roles WHERE `group`='{$opt}'";
                 $result = submitNonUpdatingQuery($this->db, $this->dbUser, $this->dbPass, $this->dbName, $sql);
-                $row = $result->fetch_row();
-                if ($row != null) {
+                $row = $result->fetch_assoc();
+                while ($row != null) {
                     $channelID = $row["channelID"];
-                    $success = false;
-                    while (!$success) {
-                        $channelRepo = $this->message->getChannelAttribute()->getGuildAttribute()->channels;
-                        $channelRepo->fetch($channelID)->then(
-                            function ($channel) use ($row, $user, &$success, $opt) {
-                                // Initialize perms
-                                /* @var $permissions \Discord\Parts\Permissions\ChannelPermission */
-                                $permissions = $this->discord->factory(\Discord\Parts\Permissions\ChannelPermission::class);
-                                // Set perms
-                                $permissions->decodeBitwise($row["allowPermMask"], $row["denyPermMask"]);
-                                /* @var $channel Discord\Parts\Channel\Channel */
-                                $channel->setPermissions($user, $permissions)->then(function () use (&$success, $user, $opt) {
-                                    $this->message->reply($user->username . " was successfully added to " . $opt);
+                    $channelRepo = $this->message->getChannelAttribute()->getGuildAttribute()->channels;
+                    $this->message->getChannelAttribute()->getGuildAttribute()->members->fetch($user->id)->then(
+                        function ($member) use ($row, $user, &$success, $opt, $channelRepo, $channelID) {
+                            $channelRepo->fetch($channelID)->then(
+                                function ($channel) use ($row, $user, &$success, $opt, $member) {
+                                    // Initialize perms
+                                    /* @var $permissions \Discord\Parts\Permissions\ChannelPermission */
+                                    $permissions = $this->discord->factory(\Discord\Parts\Permissions\ChannelPermission::class);
+                                    // Set perms
+                                    $permissions->decodeBitwise($row["allowPermMask"], $row["denyPermMask"]);
+                                    /* @var $channel Discord\Parts\Channel\Channel */
+                                    $channel->setPermissions($member, $permissions)->then(function () use (&$success, $user, $opt) {
+                                        $this->message->reply($user->username . " was successfully added to " . $opt);
                                         $success = true;
                                     });
-                            });
-                    }
-                    $sql = "INSERT INTO 'authgroup_members' (`group`, `discordID`) VALUES ('{$opt}', {$user->id})";
-                    executeUpdatingQuery($this->db, $this->dbUser, $this->dbPass, $this->dbName, $sql);
+                                });
+                        }
+                    )->otherwise(function () use ($user) {
+                        $this->message->reply("Member not found " . $user->id);
+                    });
+                    $row = $result->fetch_assoc();
                 }
+                $sql = "INSERT INTO authgroup_members (`group`, `discordID`) VALUES ('{$opt}', {$user->id})";
+                executeUpdatingQuery($this->db, $this->dbUser, $this->dbPass, $this->dbName, $sql);
+                $result->close();
             } else {
-                $sql = "SELECT * FROM authgroup_roles WHERE group='{$opt}'";
+                $sql = "SELECT * FROM authgroup_roles WHERE `group`='{$opt}'";
                 $result = submitNonUpdatingQuery($this->db, $this->dbUser, $this->dbPass, $this->dbName, $sql);
-                $row = $result->fetch_row();
-                if ($row != null) {
+                $row = $result->fetch_assoc();
+                while ($row != null) {
                     $channelID = $row["channelID"];
                     $success = false;
-                    while (!$success) {
-                        $channelRepo = $this->message->getChannelAttribute()->getGuildAttribute()->channels;
-                        $channelRepo->fetch($channelID)->then(
-                            function ($channel) use ($row, $user, &$success, $opt) {
-                                // Initialize perms
-                                /* @var $permissions \Discord\Parts\Permissions\ChannelPermission */
-                                $permissions = $this->discord->factory(\Discord\Parts\Permissions\ChannelPermission::class);
-                                // Set perms
-                                $permissions->decodeBitwise(0, 0);
-                                /* @var $channel Discord\Parts\Channel\Channel */
-                                $channel->setPermissions($user, $permissions)->then(function () use (&$success, $user, $opt) {
-                                    $this->message->reply($user->username . " was successfully removed from " . $opt);
-                                    $success = true;
+                    $channelRepo = $this->message->getChannelAttribute()->getGuildAttribute()->channels;
+                    $this->message->getChannelAttribute()->getGuildAttribute()->members->fetch($user->id)->then(
+                        function ($member) use ($row, $user, &$success, $opt, $channelRepo, $channelID) {
+                            $channelRepo->fetch($channelID)->then(
+                                function ($channel) use ($row, $user, &$success, $opt) {
+                                    // Initialize perms
+                                    /* @var $permissions \Discord\Parts\Permissions\ChannelPermission */
+                                    $permissions = $this->discord->factory(\Discord\Parts\Permissions\ChannelPermission::class);
+                                    // Set perms
+                                    $permissions->decodeBitwise(0, 0);
+                                    /* @var $channel Discord\Parts\Channel\Channel */
+                                    $channel->setPermissions($user, $permissions)->then(function () use (&$success, $user, $opt) {
+                                        $this->message->reply($user->username . " was successfully removed from " . $opt);
+                                        $success = true;
+                                    });
                                 });
-                            });
-                    }
-                    $sql = "DELETE FROM 'authgroup_members' WHERE group='{$opt}' AND discordID = {$user->id}";
+                        });
+                    $sql = "DELETE FROM authgroup_members WHERE `group`='{$opt}' AND `discordID` = {$user->id}";
                     executeUpdatingQuery($this->db, $this->dbUser, $this->dbPass, $this->dbName, $sql);
+                    $row = $result->fetch_assoc();
                 }
+                $result->close();
             }
 
         }
         return null;
     }
-}
 
-/**
- * @return array
- */
-function information()
-{
-    return array(
-        "name" => "notify",
-        "trigger" => array($this->config["bot"]["trigger"] . "group"),
-        "information" => "Groups Command: !group <add|remove> name1 name2 ..."
-    );
-}
+    /**
+     * @return array
+     */
+    function information()
+    {
+        return array(
+            "name" => "group",
+            "trigger" => array($this->config["bot"]["trigger"] . "group"),
+            "information" => "Group Management Command: !group <add|remove> name1 name2 ..."
+        );
+    }
 
-/**
- * @param $msgData
- */
-function onMessageAdmin($msgData)
-{
+    /**
+     * @param $msgData
+     */
+    function onMessageAdmin($msgData)
+    {
+    }
 }
