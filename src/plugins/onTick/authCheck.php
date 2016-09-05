@@ -107,16 +107,21 @@ class authCheck
             $dbUser = $this->config["database"]["user"];
             $dbPass = $this->config["database"]["pass"];
             $dbName = $this->config["database"]["database"];
+            $exempt = $this->config["plugins"]["auth"]["exempt"];
             $allyRoles = $this->config["plugins"]["auth"]["allianceRoles"];
             $corpRoles = $this->config["plugins"]["auth"]["corpRoles"];
             $toDiscordChannel = $this->config["plugins"]["auth"]["alertChannel"];
             $conn = new mysqli($db, $dbUser, $dbPass, $dbName);
+            if(is_null($exempt)){
+                $exempt = "0";
+            }
+            $exempt[] = $this->config["plugins"]["auth"]["defaultRole"]; // Add default role to exempt as it indicates auth status
 
             //get bot ID so we don't remove out own roles
             $botID = $this->discord->id;
 
             //Remove members who have roles but never authed
-            $guild = $discord->guilds->get('id', $id);
+            $guild = $discord->guilds->first();
             foreach($guild->members as $member) {
                 $notifier = null;
                 $id = $member->id;
