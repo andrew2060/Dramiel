@@ -23,8 +23,7 @@
  * SOFTWARE.
  */
 
- use Discord\Helpers\Guzzle;
- 
+use discord\discord;
 /**
  * Class auth
  * @property Discord\Parts\Channel\Message message
@@ -69,7 +68,7 @@ class auth
         $this->dbUser = $config["database"]["user"];
         $this->dbPass = $config["database"]["pass"];
         $this->dbName = $config["database"]["database"];
-		
+
 		$this->corpRoles = $config["plugins"]["auth"]["corpRoles"];
 		$this->allianceRoles = $config["plugins"]["auth"]["allianceRoles"];
         $this->nameEnforce = $config["plugins"]["auth"]["nameEnforce"];
@@ -92,7 +91,7 @@ class auth
         $this->message = $message;
         $userID = $msgData["message"]["fromID"];
         $userName = $msgData["message"]["from"];
-        $message = $msgData["message"]["message"];		
+        $message = $msgData["message"]["message"];
 		$defaultRole = $this->config["plugins"]["auth"]["defaultRole"];
         $data = command($message, $this->information()["trigger"], $this->config["bot"]["trigger"]);
         if (isset($data["trigger"])) {
@@ -122,7 +121,7 @@ class auth
                 $xml = makeApiRequest($url);
 
 
-                // We have an error, show it 
+                // We have an error, show it
                 if ($xml->error) {
                     $this->message->reply("**Failure:** Eve API error, please try again in a little while.");
                     return null;
@@ -131,8 +130,8 @@ class auth
                 if (!isset($xml->result->rowset->row)) {
                     $this->message->reply("**Failure:** Eve API error, please try again in a little while.");
                     return null;
-                } 							
-				
+                }
+
                 foreach ($xml->result->rowset->row as $character) {
                     $eveName = $character->attributes()->name;
                     $roles = $this->message->getChannelAttribute()->getGuildAttribute()->roles;
@@ -168,7 +167,7 @@ class auth
 								}
 							}
 						}
-						if (array_key_exists($corpid, $this->corpRoles)) {                        
+						if (array_key_exists($corpid, $this->corpRoles)) {
 							foreach ($roles as $role) {
 								$roleName = $role->name;
 								if ($roleName == $this->corpRoles[$corpid]) {
@@ -179,9 +178,9 @@ class auth
 										// Only insert new database entry for corp if no authorized alliance
 										insertUser($this->db, $this->dbUser, $this->dbPass, $this->dbName, $userID, $charid, $eveName, 'corp');
 										disableReg($this->db, $this->dbUser, $this->dbPass, $this->dbName, $code);
-									}								
+									}
 									break;
-								}						
+								}
 							}
 						}
 						if ($flag) {
@@ -200,7 +199,7 @@ class auth
 						} else {
 							$this->message->reply("**Failure:** There are no roles available for your corp/alliance.");
 							$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $eveName);
-						}        
+						}
 						if ($this->nameEnforce == 'true') {
 							foreach ($xml->result->rowset->row as $character) {
 								$member->setNickname((string) $character->attributes()->name)->then(function () use ($character) {
@@ -216,12 +215,12 @@ class auth
                         })->otherwise(function (Exception $e) use ($character) {
                             $this->logger->addInfo("User " . $character ." failed to auth " . $e->getMessage());
                         });
-					});                    										
+					});
 					return null;
 				}
 			}
 			$this->message->reply("**Failure:** There was an issue with your code.");
-			$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $userName);			
+			$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $userName);
 			return null;
 		}
 		return null;

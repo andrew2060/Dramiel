@@ -24,8 +24,7 @@
  */
 
 
-use Discord\Parts\Channel\Message;
-use Discord\Parts\Channel\Channel;
+use discord\discord;
 
 /**
  * Class notifications
@@ -94,11 +93,13 @@ class notifications
         $this->logger = $logger;
         $this->toDiscordChannel = $config["plugins"]["notifications"]["channelID"];
         $this->fuelChannel = $config["plugins"]["fuel"]["channelID"];
+        $this->fuelSkip = $config["plugins"]["fuel"]["skip"];
         $this->newestNotificationID = getPermCache("newestNotificationID");
         $this->maxID = 0;
         $this->keyID = $config["eve"]["apiKeys"]["user1"]["keyID"];
         $this->vCode = $config["eve"]["apiKeys"]["user1"]["vCode"];
         $this->characterID = $config["eve"]["apiKeys"]["user1"]["characterID"];
+        $this->guild = $config["bot"]["guild"];
         $lastCheck = getPermCache("notificationsLastChecked{$this->keyID}");
         if ($lastCheck == NULL) {
             // Schedule it for right now if first run
@@ -130,6 +131,8 @@ class notifications
      */
     function getNotifications($keyID, $vCode, $characterID)
     {
+        $discord = $this->discord;
+
         try {
             $url = "https://api.eveonline.com/char/Notifications.xml.aspx?keyID={$keyID}&vCode={$vCode}&characterID={$characterID}";
             $xml = makeApiRequest($url);
@@ -137,7 +140,7 @@ class notifications
             $cached = $xml->cachedUntil[0];
             $baseUnix = strtotime($cached);
             $cacheClr = $baseUnix - 13500;
-            if (!isset($this->fuelChannel)){
+            if (!isset($this->fuelChannel)) {
                 $this->fuelChannel = $this->toDiscordChannel;
             }
             if ($cacheClr <= time()) {
@@ -186,7 +189,7 @@ class notifications
                         case 8: // Alliance war invalidated by CONCORD
                             $aggAllianceID = trim(explode(": ", $notificationString[2])[1]);
                             $aggAllianceName = $this->apiData($aggAllianceID);
-                            $msg = "War declared by {$aggAllianceName} has been invalidated. Fighting ends in roughly 24 hours.";
+                            $msg = "War with {$aggAllianceName} has been invalidated. Fighting ends in roughly 24 hours.";
                             break;
                         case 10: // Bill issued
                             $msg = "skip";
@@ -209,6 +212,11 @@ class notifications
                             break;
                         case 21: // member left corp
                             $msg = "skip";
+                            break;
+                        case 31: // Alliance war invalidated by CONCORD
+                            $aggAllianceID = trim(explode(": ", $notificationString[2])[1]);
+                            $aggAllianceName = $this->apiData($aggAllianceID);
+                            $msg = "War with {$aggAllianceName} has been invalidated. Fighting ends in roughly 24 hours.";
                             break;
                         case 35: // Insurance payment
                             $msg = "skip";
@@ -272,6 +280,10 @@ class notifications
                             $typeName = dbQueryField("SELECT typeName FROM invTypes WHERE typeID = :id",
                                 "typeName", array(":id" => $typeID), "ccp");
                             $msg = "POS in {$systemName} - {$moonName} needs fuel. Only {$blocksRemaining} {$typeName}'s remaining.";
+                            if ($this->fuelSkip != "false") {
+                                $msg = "skip";
+                            }
+
                             break;
                         case 88: // IHUB is being attacked
                             $aggAllianceID = trim(explode(": ", $notificationString[0])[1]);
@@ -316,7 +328,7 @@ class notifications
                         case 103: // War support offer? I think?
                             $msg = "skip";
                             break;
-                        case 111: // Bounty 
+                        case 111: // Bounty
                             $msg = "skip";
                             break;
                         case 128: // Corp App
@@ -375,6 +387,12 @@ class notifications
                                 "solarSystemName", array(":id" => $systemID), "ccp");
                             $msg = "Command nodes decloaking for **{$systemName}**";
                             break;
+                        case 162: //  TCU Destroyed
+                            $systemID = trim(explode(": ", $notificationString[0])[1]);
+                            $systemName = dbQueryField("SELECT solarSystemName FROM mapSolarSystems WHERE solarSystemID = :id",
+                                "solarSystemName", array(":id" => $systemID), "ccp");
+                            $msg = "Entosis successful, TCU in **{$systemName}** has been destroyed.";
+                            break;
                         case 163: //  Outpost freeport
                             $systemID = trim(explode(": ", $notificationString[1])[1]);
                             $systemName = dbQueryField("SELECT solarSystemName FROM mapSolarSystems WHERE solarSystemID = :id",
@@ -419,7 +437,7 @@ class notifications
                             break;
                         default: // Unknown typeID
                             $string = implode(" ", $notificationString);
-                            $msg = "typeID {$typeID} is an unmapped notification, send Mr Twinkie this whole message github issue. {$string}";
+                            $msg = "typeID {$typeID} is an unmapped notification, please create a Github issue with this entire message and please include what the in-game notification is. {$string}";
                             break;
                     }
 
@@ -429,7 +447,8 @@ class notifications
                     if ($msg == "") {
                     }
                     $this->logger->addInfo("Notification sent to channel {$this->toDiscordChannel}, Message - {$msg}");
-                    $channel = Channel::find($channelID);
+                    $guild = $discord->guilds->get('id', $this->guild);
+                    $channel = $guild->channels->get('id', $channelID);
                     $channel->sendMessage($msg, false);
                     // Find the maxID so we don't output this message again in the future
                     $this->maxID = max($notificationID, $this->maxID);

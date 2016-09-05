@@ -118,7 +118,7 @@ $logger->addInfo("Loaded: " . count($plugins) . " chat plugins");
 
 $discord->on(
     'ready',
-    function($discord) use ($discord, $logger, $config, $plugins, $pluginsT) {
+    function($discord) use ($logger, $config, $plugins, $pluginsT) {
         // In here we can access any of the WebSocket events.
         //
         // There is a list of event constants that you can
@@ -139,7 +139,7 @@ $discord->on(
             updateDramielDB($logger); 
             updateCCPData($logger);
         });
-        
+
         // Run the Tick plugins
         $discord->loop->addPeriodicTimer(1, function() use ($pluginsT) {
             foreach ($pluginsT as $plugin)
@@ -188,7 +188,7 @@ $discord->on(
 );
 $discord->on(
     'error',
-    function($error, $discord) use ($logger) {
+    function($error) use ($logger) {
         $logger->addError($error);
         exit(1);
     }
@@ -202,7 +202,7 @@ $discord->on(
     'reconnected',
     function() use ($logger) {
         $logger->addInfo('Websocket was reconnected..');
-});
+    });
 // Now we will run the ReactPHP Event Loop!
 $discord->run();
 

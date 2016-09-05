@@ -23,7 +23,7 @@
  * SOFTWARE.
  */
 
-use Discord\Parts\Channel\Channel;
+use discord\discord;
 
 /**
  * Class siphons
@@ -59,9 +59,11 @@ class siphons {
         $this->config = $config;
         $this->discord = $discord;
         $this->logger = $logger;
+        $this->guild = $config["bot"]["guild"];
         $this->toDiscordChannel = $config["plugins"]["siphons"]["channelID"];
         $this->keyID = $config["plugins"]["siphons"]["keyID"];
         $this->vCode = $config["plugins"]["siphons"]["vCode"];
+        $this->prefix = $config["plugins"]["siphons"]["prefix"];
         $lastCheck = getPermCache("siphonLastChecked{$this->keyID}");
         if ($lastCheck == NULL) {
             // Schedule it for right now if first run
@@ -86,6 +88,8 @@ class siphons {
 
     function checkTowers($keyID, $vCode)
     {
+        $discord = $this->discord;
+
         $url = "https://api.eveonline.com/corp/AssetList.xml.aspx?keyID={$keyID}&vCode={$vCode}";
         $xml = makeApiRequest($url);
         $siphonCount = 0;
@@ -105,7 +109,8 @@ class siphons {
                                 $msg .= "**System: **{$systemName} has a possible siphon stealing {$gooType} from a silo.\n";
                                 // Send the msg to the channel;
                                 $channelID = $this->toDiscordChannel;
-                                $channel = Channel::find($channelID);
+                                $guild = $discord->guilds->get('id', $this->guild);
+                                $channel = $guild->channels->get('id', $channelID);
                                 $channel->sendMessage($msg, false);
                                 $this->logger->addInfo($msg);
                                 $siphonCount++;
@@ -129,7 +134,8 @@ class siphons {
                                 $msg .= "**System: **{$systemName} has a possible siphon stealing {$gooType} from a coupling array.\n";
                                 // Send the msg to the channel;
                                 $channelID = $this->toDiscordChannel;
-                                $channel = Channel::find($channelID);
+                                $guild = $discord->guilds->get('id', $this->guild);
+                                $channel = $guild->channels->get('id', $channelID);
                                 $channel->sendMessage($msg, false);
                                 $this->logger->addInfo($msg);
                                 $siphonCount++;
@@ -154,7 +160,8 @@ class siphons {
         if ($siphonCount > 0) {
             $msg = "Next Siphon Check At: {$cacheTimer} EVE Time";
             $channelID = $this->toDiscordChannel;
-            $channel = Channel::find($channelID);
+            $guild = $discord->guilds->get('id', $this->guild);
+            $channel = $guild->channels->get('id', $channelID);
             $channel->sendMessage($msg, false);
         }
         $this->logger->addInfo("Siphon Check Complete Next Check At {$cacheTimer}");
