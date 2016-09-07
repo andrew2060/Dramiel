@@ -133,7 +133,7 @@ class authCheck
                 $result = $conn->query($sql);
                 if($result->num_rows == 0) {
                     foreach ($roles as $role) {
-                        if(!isset($role->name)){
+                        if(isset($role->name)){
                             if($id != $botID && !in_array($role->name, $exempt, true)){
 //                                $member->removeRole($role);
 //                                $guild->members->save($member);
