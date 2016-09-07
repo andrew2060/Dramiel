@@ -135,13 +135,13 @@ class authCheck
                     foreach ($roles as $role) {
                         if(!isset($role->name)){
                             if($id != $botID && !in_array($role->name, $exempt, true)){
-                                $member->removeRole($role);
-                                $guild->members->save($member);
+//                                $member->removeRole($role);
+//                                $guild->members->save($member);
                                 // Send the info to the channel
-                                $msg = "{$username} has been removed from the {$role->name} role as they never authed (Someone manually assigned them roles).";
+//                                $msg = "{$username} has been removed from the {$role->name} role as they never authed (Someone manually assigned them roles).";
                                 $channelID = $toDiscordChannel;
-                                $channel = $guild->channels->get('id', $channelID);
-                                $channel->sendMessage($msg, false);
+//                                $channel = $guild->channels->get('id', $channelID);
+//                                $channel->sendMessage($msg, false);
                                 $this->logger->addInfo("{$username} has been removed from the {$role->name} role as they never authed.");
                             }
                         }
