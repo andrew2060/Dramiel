@@ -113,7 +113,7 @@ class authCheck
             $toDiscordChannel = $this->config["plugins"]["auth"]["alertChannel"];
             $conn = new mysqli($db, $dbUser, $dbPass, $dbName);
             if(is_null($exempt)){
-                $exempt = "0";
+                $exempt = array();
             }
             $exempt[] = $this->config["plugins"]["auth"]["defaultRole"]; // Add default role to exempt as it indicates auth status
 
