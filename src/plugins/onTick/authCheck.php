@@ -85,6 +85,7 @@ class authCheck
             "information" => ""
         );
     }
+
     function tick()
     {
         $lastChecked = getPermCache("authLastChecked");
@@ -112,7 +113,7 @@ class authCheck
             $corpRoles = $this->config["plugins"]["auth"]["corpRoles"];
             $toDiscordChannel = $this->config["plugins"]["auth"]["alertChannel"];
             $conn = new mysqli($db, $dbUser, $dbPass, $dbName);
-            if(is_null($exempt)){
+            if (is_null($exempt)) {
                 $exempt = array();
             }
             $exempt[] = $this->config["plugins"]["auth"]["defaultRole"]; // Add default role to exempt as it indicates auth status
@@ -122,7 +123,7 @@ class authCheck
 
             //Remove members who have roles but never authed
             $guild = $discord->guilds->first();
-            foreach($guild->members as $member) {
+            foreach ($guild->members as $member) {
                 $notifier = null;
                 $id = $member->id;
                 $username = $member->username;
@@ -131,10 +132,10 @@ class authCheck
                 $sql = "SELECT * FROM authUsers WHERE discordID='$id' AND active='yes'";
 
                 $result = $conn->query($sql);
-                if($result->num_rows == 0) {
+                if ($result->num_rows == 0) {
                     foreach ($roles as $role) {
-                        if(isset($role->name)){
-                            if($id != $botID && !in_array($role->name, $exempt, true)){
+                        if (isset($role->name)) {
+                            if ($id != $botID && !in_array($role->name, $exempt, true)) {
 //                                $member->removeRole($role);
 //                                $guild->members->save($member);
                                 // Send the info to the channel
@@ -160,40 +161,40 @@ class authCheck
                     $discordID = $rows['discordID'];
                     $guild = $this->discord->guilds->first();
                     $members = $guild->members;
-					$members->fetch($discordID)->then(function ($member) use ($db, $dbUser, $dbPass, $dbName, $allyRoles, $corpRoles, $toDiscordChannel, $conn, $sql, $rows, $result, $charID, $discordID, $guild, $members) {
-						$eveName = $rows['eveName'];
-						$roles = $member->roles;
-						$url = "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx?ids=$charID";
-						$xml = makeApiRequest($url);
+                    $members->fetch($discordID)->then(function ($member) use ($db, $dbUser, $dbPass, $dbName, $allyRoles, $corpRoles, $toDiscordChannel, $conn, $sql, $rows, $result, $charID, $discordID, $guild, $members) {
+                        $eveName = $rows['eveName'];
+                        $roles = $member->roles;
+                        $url = "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx?ids=$charID";
+                        $xml = makeApiRequest($url);
                         // Stop the process if the api is throwing an error
-                        if (is_null($xml)){
+                        if (is_null($xml)) {
                             $this->logger->addInfo("{$eveName} cannot be authed, API issues detected.");
                             return null;
                         }
-						if ($xml->result->rowset->row[0]) {
-							foreach ($xml->result->rowset->row as $character) {
-								$allyid = (int) $character->attributes()->allianceID;
-								$corpid = (int) $character->attributes()->corporationID;
-								if (!array_key_exists($allyid, $allyRoles) && !array_key_exists($corpid, $corpRoles)) {
-									foreach ($roles as $role) {
-										$member->removeRole($role);
-									}
+                        if ($xml->result->rowset->row[0]) {
+                            foreach ($xml->result->rowset->row as $character) {
+                                $allyid = (int)$character->attributes()->allianceID;
+                                $corpid = (int)$character->attributes()->corporationID;
+                                if (!array_key_exists($allyid, $allyRoles) && !array_key_exists($corpid, $corpRoles)) {
+                                    foreach ($roles as $role) {
+                                        $member->removeRole($role);
+                                    }
 
-									// Send the info to the channel
-									$msg = "{$eveName} roles have been removed via the auth.";
-									$channelID = $toDiscordChannel;
-									$channelRepo = $guild->channels;
-									$channelRepo->fetch($channelID)->then(function ($channel) use ($msg) {
-										$channel->sendMessage($msg, false);
-									});
-									$this->logger->addInfo("{$eveName}'s roles have been removed via auth.");
-									$sql = "UPDATE authUsers SET active='no' WHERE discordID='{$discordID}'";
-									$conn->query($sql);
-								}
-							}
-						}
-						$members->save($member);
-					});
+                                    // Send the info to the channel
+                                    $msg = "{$eveName} roles have been removed via the auth.";
+                                    $channelID = $toDiscordChannel;
+                                    $channelRepo = $guild->channels;
+                                    $channelRepo->fetch($channelID)->then(function ($channel) use ($msg) {
+                                        $channel->sendMessage($msg, false);
+                                    });
+                                    $this->logger->addInfo("{$eveName}'s roles have been removed via auth.");
+                                    $sql = "UPDATE authUsers SET active='no' WHERE discordID='{$discordID}'";
+                                    $conn->query($sql);
+                                }
+                            }
+                        }
+                        $members->save($member);
+                    });
                 }
                 $this->logger->addInfo("All users successfully authed.");
                 $nextCheck = time() + 7200;
@@ -202,23 +203,18 @@ class authCheck
                     while ($rows = $result->fetch_assoc()) {
                         $discordID = $rows['discordID'];
                         $eveName = $rows['eveName'];
-                        $member = $guild->members->get("id", $discordID);
-                        $discordName = $member->user->username;
-                        if ($discordName != $eveName) {
-                            foreach ($roles as $role) {
-                                $member->removeRole($role);
+                        $member = $guild->members->fetch($discordID)->then(
+                            function ($member) use ($eveName) {
+                                /* @var \Discord\Parts\User\Member $member */
+                            $discordName = $member->user->username;
+                            if (isset($member->nick)) {
+                                $discordName = $member->nick;
                             }
+                            if ($discordName != $eveName) {
+                                $member->setNickname($eveName);
+                            }
+                        });
 
-                            // Send the info to the channel
-                            $msg = $discordName . " roles have been removed because their name no longer matches their ingame name.";
-                            $channelID = $toDiscordChannel;
-                            $channel = $guild->channels->get('id', $channelID);
-                            $channel->sendMessage($msg, false);
-                            $this->logger->addInfo($discordName . " roles have been removed because their name no longer matches their ingame name.");
-
-                            $sql = "UPDATE authUsers SET active='no' WHERE discordID='$discordID'";
-                            $conn->query($sql);
-                        }
                     }
                     $this->logger->addInfo("All users names have been checked.");
                     $cacheTimer = gmdate("Y-m-d H:i:s", $nextCheck);
