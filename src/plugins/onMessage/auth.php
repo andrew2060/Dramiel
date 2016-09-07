@@ -23,7 +23,6 @@
  * SOFTWARE.
  */
 
-use discord\discord;
 /**
  * Class auth
  * @property Discord\Parts\Channel\Message message

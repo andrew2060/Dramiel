@@ -23,7 +23,7 @@
  * SOFTWARE.
  */
 
-use discord\discord;
+use Discord\Parts\Channel\Channel;
 
 /**
  * Class fleetUpOperations

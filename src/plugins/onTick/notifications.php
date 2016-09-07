@@ -24,7 +24,7 @@
  */
 
 
-use discord\discord;
+use Discord\Parts\Channel\Channel;
 
 /**
  * Class notifications
