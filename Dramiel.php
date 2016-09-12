@@ -95,32 +95,31 @@ foreach ($pluginDirs as $dir) {
 $logger->info("Loaded: " . count($pluginsT) . " background plugins");
 
 // Load chat plugins
-    $pluginDirs = array("src/plugins/onMessage/*.php", "src/plugins/admin/*.php");
-    $adminPlugins = array("setNickname", "updateBot", "holder");
-    $logger->addInfo("Loading in chat plugins");
-    $plugins = array();
-    foreach ($pluginDirs as $dir) {
-        foreach (glob($dir) as $plugin) {
-            // Only load the plugins we want to load, according to the config
-            if (!in_array(str_replace(".php", "", basename($plugin)), $config["enabledPlugins"]) && !in_array(str_replace(".php", "", basename($plugin)), $adminPlugins)) {
-                continue;
-            }
-
-            require_once($plugin);
-            $fileName = str_replace(".php", "", basename($plugin));
-            $p = new $fileName();
-            $p->init($config, $discord, $logger);
-            $plugins[] = $p;
+$pluginDirs = array("src/plugins/onMessage/*.php", "src/plugins/admin/*.php");
+$adminPlugins = array();
+$logger->addInfo("Loading in chat plugins");
+$plugins = array();
+foreach ($pluginDirs as $dir) {
+    foreach (glob($dir) as $plugin) {
+        // Only load the plugins we want to load, according to the config
+        if (!in_array(str_replace(".php", "", basename($plugin)), $config["enabledPlugins"]) && !in_array(str_replace(".php", "", basename($plugin)), $adminPlugins)) {
+            continue;
         }
+
+        require_once($plugin);
+        $fileName = str_replace(".php", "", basename($plugin));
+        $p = new $fileName();
+        $p->init($config, $discord, $logger);
+        $plugins[] = $p;
     }
+}
 
 // Number of chat plugins loaded
-    $logger->addInfo("Loaded: " . count($plugins) . " chat plugins");
-}
+$logger->addInfo("Loaded: " . count($plugins) . " chat plugins");
 
 $discord->on(
     'ready',
-    function($discord) use ($logger, $config, $plugins, $pluginsT) {
+    function ($discord) use ($logger, $config, $plugins, $pluginsT) {
         // In here we can access any of the WebSocket events.
         //
         // There is a list of event constants that you can
@@ -129,27 +128,27 @@ $discord->on(
         // We will echo to the console that the WebSocket is ready.
         $logger->addInfo('Discord WebSocket is ready!' . PHP_EOL);
         $game = $discord->factory(Game::class, [
-			'name' => $config["bot"]["game"],
-			'url' => null,
-			'type' => null,
-		], true);
+            'name' => $config["bot"]["game"],
+            'url' => null,
+            'type' => null,
+        ], true);
         $discord->updatePresence($game, false);
         // $discord->setNickname($config["bot"]["name"]); //not in yet
 
         // Database check
-        $discord->loop->addPeriodicTimer(86400, function() use ($logger) {
-            updateDramielDB($logger); 
+        $discord->loop->addPeriodicTimer(86400, function () use ($logger) {
+            updateDramielDB($logger);
             updateCCPData($logger);
         });
 
         // Run the Tick plugins
-        $discord->loop->addPeriodicTimer(5, function() use ($pluginsT) {
+        $discord->loop->addPeriodicTimer(5, function () use ($pluginsT) {
             foreach ($pluginsT as $plugin)
                 $plugin->tick();
         });
 
         // Mem cleanup every 30 minutes
-        $discord->loop->addPeriodicTimer(1800, function() use ($logger) {
+        $discord->loop->addPeriodicTimer(1800, function () use ($logger) {
             $logger->addInfo("Memory in use: " . memory_get_usage() / 1024 / 1024 . "MB");
             gc_collect_cycles(); // Collect garbage
             $logger->addInfo("Memory in use after garbage collection: " . memory_get_usage() / 1024 / 1024 . "MB");
@@ -157,7 +156,7 @@ $discord->on(
 
         $discord->on(
             Event::MESSAGE_CREATE,
-            function($message) use ($logger, $config, $plugins) {
+            function ($message) use ($logger, $config, $plugins) {
 
                 $msgData = array(
                     "message" => array(
@@ -190,19 +189,19 @@ $discord->on(
 );
 $discord->on(
     'error',
-    function($error) use ($logger) {
+    function ($error) use ($logger) {
         $logger->addError($error);
         exit(1);
     }
 );
 $discord->on(
     'reconnecting',
-    function() use ($logger) {
+    function () use ($logger) {
         $logger->addInfo('Websocket is reconnecting..');
-});
+    });
 $discord->on(
     'reconnected',
-    function() use ($logger) {
+    function () use ($logger) {
         $logger->addInfo('Websocket was reconnected..');
     });
 // Now we will run the ReactPHP Event Loop!
