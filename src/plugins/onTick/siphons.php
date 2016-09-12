@@ -105,6 +105,9 @@ class siphons {
                             if ($silo->attributes()->quantity % 50 != 0) {
                                 $gooType = dbQueryField("SELECT typeName FROM invTypes WHERE typeID = :id", "typeName", array(":id" => $silo->attributes()->typeID), "ccp");
                                 $systemName = dbQueryField("SELECT solarSystemName FROM mapSolarSystems WHERE solarSystemID = :id", "solarSystemName", array(":id" => $structures->attributes()->locationID), "ccp");
+                                if (substr($gooType, 0, strlen("Unrefined")) === "Unrefined") {
+                                    continue;
+                                }
                                 $msg = "{$this->prefix}";
                                 $msg .= "**POSSIBLE SIPHON**\n";
                                 $msg .= "**System: **{$systemName} has a possible siphon stealing {$gooType} from a silo.\n";
@@ -129,6 +132,9 @@ class siphons {
                             //Check for a multiple of 50
                             if ($coupling->attributes()->quantity % 50 != 0) {
                                 $gooType = dbQueryField("SELECT typeName FROM invTypes WHERE typeID = :id", "typeName", array(":id" => $coupling->attributes()->typeID), "ccp");
+                                if (substr($gooType, 0, strlen("Unrefined")) === "Unrefined") {
+                                    continue;
+                                }
                                 $systemName = dbQueryField("SELECT solarSystemName FROM mapSolarSystems WHERE solarSystemID = :id", "solarSystemName", array(":id" => $structures->attributes()->locationID), "ccp");
                                 $msg = "{$this->prefix}";
                                 $msg .= "**POSSIBLE SIPHON**\n";
