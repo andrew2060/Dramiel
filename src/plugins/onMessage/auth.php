@@ -88,6 +88,8 @@ class auth
     function onMessage($msgData, Discord\Parts\Channel\Message $message)
     {
         $this->message = $message;
+//        $id = $this->config["bot"]["guild"];
+//        $guild = $this->discord->guilds->get('id', $id);
         $userID = $msgData["message"]["fromID"];
         $userName = $msgData["message"]["from"];
         $message = $msgData["message"]["message"];
@@ -235,10 +237,8 @@ class auth
             "information" => "SSO based auth system. " . $this->ssoUrl . " Visit the link and login with your main EVE account, select the correct character, and put the !auth <string> you receive in chat."
         );
     }
-    /**
-     * @param $msgData
-     */
-    function onMessageAdmin($msgData)
+
+    function onMessageAdmin()
     {
     }
 }

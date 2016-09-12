@@ -81,6 +81,13 @@ class notifications
      * @var
      */
     var $alliApi;
+    public $fuelChannel;
+    public $fuelSkip;
+    public $keyID;
+    public $vCode;
+    public $characterID;
+    public $guild;
+
     /**
      * @param $config
      * @param $discord
@@ -178,8 +185,7 @@ class notifications
                         case 5: // War Declared
                             $aggAllianceID = trim(explode(": ", $notificationString[2])[1]);
                             $aggAllianceName = $this->apiData($aggAllianceID);
-                            $delayHours = trim(explode(": ", $notificationString[3])[1]);
-                            $msg = "@everyone | War declared by {$aggAllianceName}. Fighting begins in roughly {$delayHours} hours.";
+                            $msg = "@everyone | War declared by {$aggAllianceName}. Fighting begins in roughly 24 hours.";
                             break;
                         case 7: // War Declared corp
                             $aggCorpID = trim(explode(": ", $notificationString[2])[1]);
@@ -356,7 +362,7 @@ class notifications
                             $typeID = trim(explode(": ", $notificationString[1])[1]);
                             $typeName = dbQueryField("SELECT typeName FROM invTypes WHERE typeID = :id",
                                 "typeName", array(":id" => $typeID), "ccp");
-                            $msg = "@everyone | Entosis has started in **{$systemName}** on **{$typeName}** (Date: **{$sentDate}**)";
+                            $msg = "Entosis has started in **{$systemName}** on **{$typeName}** (Date: **{$sentDate}**)";
                             break;
                         case 148: // Entosis enabled a module ??????
                             $systemID = trim(explode(": ", $notificationString[0])[1]);
@@ -444,8 +450,6 @@ class notifications
                     if ($msg == "skip") {
                         return null;
                     }
-                    if ($msg == "") {
-                    }
                     $this->logger->addInfo("Notification sent to channel {$this->toDiscordChannel}, Message - {$msg}");
                     $guild = $discord->guilds->get('id', $this->guild);
                     $channel = $guild->channels->get('id', $channelID);
@@ -461,6 +465,7 @@ class notifications
         } catch (Exception $e) {
             $this->logger->addInfo("Notification Error: " . $e->getMessage());
         }
+        return null;
     }
     /**
      * @param $keyID
@@ -495,6 +500,11 @@ class notifications
         foreach ($xml->result->rowset->row as $entity) {
             $name = $entity->attributes()->name;
         }
+
+        if (!isset($name)) { // Make sure it's always set.
+            $name = "Unknown";
+        }
+
         return $name;
     }
 

@@ -99,7 +99,8 @@ class authCheck
     }
 
     /**
-     *
+     * @param $discord
+     * @return null
      */
     function checkAuth($discord)
     {
@@ -118,8 +119,8 @@ class authCheck
             }
             $exempt[] = $this->config["plugins"]["auth"]["defaultRole"]; // Add default role to exempt as it indicates auth status
 
-            //get bot ID so we don't remove out own roles
-            $botID = $this->discord->id;
+        //get bot ID so we don't remove out own roles
+        $botID = $this->discord->id;
 
             //Remove members who have roles but never authed
             $guild = $discord->guilds->first();
@@ -129,7 +130,7 @@ class authCheck
                 $username = $member->username;
                 $roles = $member->roles;
 
-                $sql = "SELECT * FROM authUsers WHERE discordID='$id' AND active='yes'";
+            $sql = "SELECT * FROM authUsers WHERE discordID='$id' AND active='yes'";
 
                 $result = $conn->query($sql);
                 if ($result->num_rows == 0) {
@@ -150,10 +151,10 @@ class authCheck
                 }
             }
 
-            $sql = "SELECT characterID, discordID, eveName FROM authUsers WHERE active='yes'";
+        $sql = "SELECT characterID, discordID, eveName FROM authUsers WHERE active='yes'";
 
-            $result = $conn->query($sql);
-            $num_rows = $result->num_rows;
+        $result = $conn->query($sql);
+        $num_rows = $result->num_rows;
 
             if ($num_rows >= 2) {
                 while ($rows = $result->fetch_assoc()) {
@@ -235,10 +236,7 @@ class authCheck
         return null;
     }
 
-    /**
-     * @param $msgData
-     */
-    function onMessage($msgData)
+    function onMessage()
     {
     }
 }

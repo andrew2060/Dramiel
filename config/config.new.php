@@ -29,7 +29,10 @@ $config["bot"] = array(
     "name" => "TWINKIE NUMBA UN", // Discord name for your bot (Not yet implemented)
     "game" => "USA #1", // Shows the bot "playing" this
     "trigger" => "!", // what trigger is used for commands
-    "token" => "" //enter the token for your app (https://discordapp.com/developers/applications/me)
+    "guild" => 152677265635803136, // guildID 
+    "token" => "", //enter the token for your app (https://discordapp.com/developers/applications/me)
+    "adminRoles" => array("Admin",""),//enter the roles that you'd like to have access to admin commands
+    "silentMode" => "false"//set this to true if you want to disable all the chat commands
 );
 
 $config["database"] = array(
@@ -130,9 +133,9 @@ $config["plugins"] = array(
         "corpMemberRole" => "", // The name of the role your CORP members will be assigned too if the auth plugin is active.
         "allyMemberRole" => "", // The name of the role your ALLY members will be assigned too if the auth plugin is active.
         "alertChannel" => 0, // if using periodic check put the channel you'd like the bot to log removing users in. (Recommended you don't use an active chat channel)
-        "nameEnforce" => "false", // put "true" or "false", if you'd like to make sure people's name match character names
+        "nameEnforce" => "false", // if "true" bot will automatically change nicknames so that they match player names.
         "url" => "http://.....", // put a url here if using sso auth for ur sso page.
-        "exempt" => array("","") // role names that are exempt from auth checks (wont be removed by the bot)
+        "exempt" => array("", "") // role names that are exempt from auth checks (wont be removed by the bot)
     ),
     //Killmail posting
     "getKillmails" => array(

@@ -27,17 +27,18 @@
  */
 
 function updateCCPData($logger) {
-    $ccpDataURL = "https://mambaonline.org/bot/sqlite-latest.sqlite.bz2";
-    $ccpDataMD5URL = "https://mambaonline.org/bot/sqlite-latest.sqlite.bz2.md5";
+    $ccpDataURL = "https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2";
+    $ccpDataMD5URL = "https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2.md5";
     $databaseDir = __DIR__ . "/../../database/";
     $md5 = explode(" ", downloadData($ccpDataMD5URL))[0];
     $lastSeenMD5 = getPermCache("CCPDataMD5");
     $lastChecked = getPermCache("CCPDataLastAttempt");
     $completed = getPermCache("CCPDataCompleted");
+    $dbSize = filesize("{$databaseDir}ccpData.sqlite");
     if (!isset($lastChecked)) {
         $lastChecked = 1;
     }
-    if ($lastSeenMD5 !== $md5 && time() > $lastChecked || $completed !== "1") {
+    if ($lastSeenMD5 !== $md5 && time() > $lastChecked || $completed !== "1" || $dbSize < 10000) {
         try {
             $checkNext = time() + 79200;
             setPermCache("CCPDataLastAttempt", $checkNext);
@@ -58,7 +59,6 @@ function updateCCPData($logger) {
             $logger->addInfo("Writing bz2 file contents into .sqlite file");
             file_put_contents("{$databaseDir}/ccpData.sqlite", $data);
             $logger->addInfo("Flushing bz2 data from memory");
-            $data = null;
             $logger->addInfo("Memory in use: " . memory_get_usage() / 1024 / 1024 . "MB");
             gc_collect_cycles(); // Collect garbage
             $logger->addInfo("Memory in use after garbage collection: " . memory_get_usage() / 1024 / 1024 . "MB");
@@ -86,4 +86,5 @@ function updateCCPData($logger) {
     } else {
         $logger->addInfo("CCP Database already up to date");
     }
+    return null;
 }

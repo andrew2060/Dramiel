@@ -95,26 +95,28 @@ foreach ($pluginDirs as $dir) {
 $logger->info("Loaded: " . count($pluginsT) . " background plugins");
 
 // Load chat plugins
-$pluginDirs = array("src/plugins/onMessage/*.php");
-$logger->addInfo("Loading in chat plugins");
-$plugins = array();
-foreach ($pluginDirs as $dir) {
-    foreach (glob($dir) as $plugin) {
-        // Only load the plugins we want to load, according to the config
-        if (!in_array(str_replace(".php", "", basename($plugin)), $config["enabledPlugins"])) {
-            continue;
-        }
+    $pluginDirs = array("src/plugins/onMessage/*.php", "src/plugins/admin/*.php");
+    $adminPlugins = array("setNickname", "updateBot", "holder");
+    $logger->addInfo("Loading in chat plugins");
+    $plugins = array();
+    foreach ($pluginDirs as $dir) {
+        foreach (glob($dir) as $plugin) {
+            // Only load the plugins we want to load, according to the config
+            if (!in_array(str_replace(".php", "", basename($plugin)), $config["enabledPlugins"]) && !in_array(str_replace(".php", "", basename($plugin)), $adminPlugins)) {
+                continue;
+            }
 
-        require_once($plugin);
-        $fileName = str_replace(".php", "", basename($plugin));
-        $p = new $fileName();
-        $p->init($config, $discord, $logger);
-        $plugins[] = $p;
+            require_once($plugin);
+            $fileName = str_replace(".php", "", basename($plugin));
+            $p = new $fileName();
+            $p->init($config, $discord, $logger);
+            $plugins[] = $p;
+        }
     }
-}
 
 // Number of chat plugins loaded
-$logger->addInfo("Loaded: " . count($plugins) . " chat plugins");
+    $logger->addInfo("Loaded: " . count($plugins) . " chat plugins");
+}
 
 $discord->on(
     'ready',
@@ -141,7 +143,7 @@ $discord->on(
         });
 
         // Run the Tick plugins
-        $discord->loop->addPeriodicTimer(1, function() use ($pluginsT) {
+        $discord->loop->addPeriodicTimer(5, function() use ($pluginsT) {
             foreach ($pluginsT as $plugin)
                 $plugin->tick();
         });
@@ -155,7 +157,7 @@ $discord->on(
 
         $discord->on(
             Event::MESSAGE_CREATE,
-            function($message, $discord, $newdiscord) use ($logger, $config, $plugins) {
+            function($message) use ($logger, $config, $plugins) {
 
                 $msgData = array(
                     "message" => array(
