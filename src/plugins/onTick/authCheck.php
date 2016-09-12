@@ -199,28 +199,28 @@ class authCheck
                 $this->logger->addInfo("All users successfully authed.");
                 $nextCheck = time() + 7200;
                 setPermCache("authLastChecked", $nextCheck);
-                if ($this->config["plugins"]["auth"]["nameEnforce"] == "true") {
-                    while ($rows = $result->fetch_assoc()) {
-                        $discordID = $rows['discordID'];
-                        $eveName = $rows['eveName'];
-                        $member = $guild->members->fetch($discordID)->then(
-                            function ($member) use ($eveName) {
-                                /* @var \Discord\Parts\User\Member $member */
-                            $discordName = $member->user->username;
-                            if (isset($member->nick)) {
-                                $discordName = $member->nick;
-                            }
-                            if ($discordName != $eveName) {
-                                $member->setNickname($eveName);
-                            }
-                        });
-
-                    }
-                    $this->logger->addInfo("All users names have been checked.");
-                    $cacheTimer = gmdate("Y-m-d H:i:s", $nextCheck);
-                    $this->logger->addInfo("Next auth and name check at {$cacheTimer} EVE");
-                    return null;
-                }
+//                if ($this->config["plugins"]["auth"]["nameEnforce"] == "true") {
+//                    while ($rows = $result->fetch_assoc()) {
+//                        $discordID = $rows['discordID'];
+//                        $eveName = $rows['eveName'];
+//                        $member = $guild->members->fetch($discordID)->then(
+//                            function ($member) use ($eveName) {
+//                                /* @var \Discord\Parts\User\Member $member */
+//                            $discordName = $member->user->username;
+//                            if (isset($member->nick)) {
+//                                $discordName = $member->nick;
+//                            }
+//                            if ($discordName != $eveName) {
+//                                $member->setNickname($eveName);
+//                            }
+//                        });
+//
+//                    }
+//                    $this->logger->addInfo("All users names have been checked.");
+//                    $cacheTimer = gmdate("Y-m-d H:i:s", $nextCheck);
+//                    $this->logger->addInfo("Next auth and name check at {$cacheTimer} EVE");
+//                    return null;
+//                }
                 $cacheTimer = gmdate("Y-m-d H:i:s", $nextCheck);
                 $this->logger->addInfo("Next auth and name check at {$cacheTimer} EVE");
                 return null;
