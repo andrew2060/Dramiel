@@ -201,21 +201,22 @@ class auth
 							$this->message->reply("**Failure:** There are no roles available for your corp/alliance.");
 							$this->logger->addInfo("User was denied due to not being in the correct corp or alliance " . $eveName);
 						}
-						if ($this->nameEnforce == 'true') {
-							foreach ($xml->result->rowset->row as $character) {
-								$member->setNickname((string) $character->attributes()->name)->then(function () use ($character) {
-									$this->message->reply("Setting Nick " . $character->attributes()->name);
-								})->otherwise(function (Exception $e) use ($character) {
-                                     $this->message->reply("Error setting Nick " . $e->getMessage());
-								});
-								break;
-							}
-						}
-						$members->save($member)->then(function () use ($character) {
-						    $this->logger->addInfo("User successfully saved: " + $character);
-                        })->otherwise(function (Exception $e) use ($character) {
-                            $this->logger->addInfo("User " . $character ." failed to auth " . $e->getMessage());
+						$members->save($member)->then(function () use ($eveName, $member, $xml) {
+						    $this->logger->addInfo("User successfully saved: " + $eveName);
+                            if ($this->nameEnforce == 'true') {
+                                foreach ($xml->result->rowset->row as $character) {
+                                    $member->setNickname((string) $character->attributes()->name)->then(function () use ($character) {
+                                        $this->message->reply("Setting Nick " . $character->attributes()->name);
+                                    })->otherwise(function (Exception $e) use ($character) {
+                                        $this->message->reply("Error setting Nick " . $e->getMessage());
+                                    });
+                                    break;
+                                }
+                            }
+                        })->otherwise(function (Exception $e) use ($eveName) {
+                            $this->logger->addInfo("User " . $eveName ." failed to auth " . $e->getMessage());
                         });
+
 					});
 					return null;
 				}
